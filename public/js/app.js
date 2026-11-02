@@ -116,13 +116,13 @@ function renderCal(){mS.value=vm;yS.value=vy;
     g.append(b)}}
 function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel),hol=holiday(sel,l);
   $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>${hol.length?` · <span class="holt">${hol.join(", ")}</span>`:""}`+
-   (ev.length?ev.map(e=>`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
 /* Danh sách sự kiện của tháng đang xem */
 function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   for(let i=1;i<=n;i++)eventsOn(new Date(vy,vm,i)).forEach(e=>{const r=mp.get(e.id)||{e,f:i,l:i};r.l=i;mp.set(e.id,r)});
   $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
   const L=[...mp.values()].sort((a,b)=>a.f-b.f),box=$("#mList");
-  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)} · ${repTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small></span></button>`).join(""):`<div class="empty">Tháng này chưa có sự kiện.</div>`;
+  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}" data-ev="${esc(r.e.id)}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)} · ${repTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small></span></button>`).join(""):`<div class="empty">Tháng này chưa có sự kiện.</div>`;
   const hl=[];for(let i=1;i<=n;i++){const d=new Date(vy,vm,i),h=holiday(d,toLunar(i,vm+1,vy));if(h.length)hl.push(`<div><b>${i}/${vm+1}</b> · ${h.join(", ")}</div>`)}
   if(hl.length)box.insertAdjacentHTML("beforeend",`<div class="hols">${hl.join("")}</div>`);
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sel=new Date(vy,vm,+b.dataset.d);renderCal();renderDetail()})}
@@ -136,9 +136,10 @@ function remList(){const out=[],up=[];
   events.forEach(e=>{const o=nextOcc(e);if(!o)return;const dd=diffD(o.s,T0),it={e,o,dd,run:dd<=0};up.push(it);if(dd<=7)out.push(it)});
   const by=(a,b)=>a.o.s-b.o.s;return{out:out.sort(by),up:up.sort(by)}}
 function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;
-  $("#notes").innerHTML=out.length?out.map(n=>{const st=n.run?"now":n.dd<=3?"w3":"w7",lbl=n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":"Nhắc lần 1";
-    return`<div class="rem ${st}"><div class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></div><div class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small>${esc(n.e.note)}</small>`:""}<span class="chip">${lbl} · ${repTxt(n.e)}</span></div></div>`}).join("")
-   :up.length?`<div class="empty">Không có nhắc nhở trong 7 ngày tới.<small>Sắp tới: <b>${esc(up[0].e.name)}</b> – ${fmtY(up[0].o.s)} (còn ${up[0].dd} ngày)</small></div>`:`<div class="empty">Chưa có sự kiện nào.</div>`;
+  const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chip">${lbl}</span></span></button>`;
+  const upc=up.filter(n=>!out.includes(n)).slice(0,3);
+  $("#notes").innerHTML=out.length?out.map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7",(n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":"Nhắc lần 1")+" · "+repTxt(n.e))).join("")
+    :`<div class="empty">${up.length?"Không có nhắc nhở trong 7 ngày tới.":"Chưa có sự kiện nào."}</div>`+(upc.length?`<div class="sub">Sắp tới</div>`+upc.map(n=>item(n,"w7","Sắp tới · "+repTxt(n.e))).join(""):"");
   const pm=$("#perm"),ok="Notification"in window;
   pm.textContent=!ok?"Không hỗ trợ":Notification.permission==="granted"?"Đã bật thông báo":Notification.permission==="denied"?"Thông báo bị chặn":"Bật thông báo";
   if(ok&&Notification.permission==="granted"){let sent={};try{sent=JSON.parse(localStorage.getItem(SENT)||"{}")}catch{}
@@ -174,15 +175,30 @@ function syncForm(){const rep=radio("rep")==="y",cal=radio("cal");
 function resetForm(){editing=null;$("#evF").reset();$("#fY").value=now.getFullYear();$("#fSave").textContent="Lưu sự kiện";$("#fTitle").textContent="Thêm sự kiện mới";syncForm()}
 $("#fReset").onclick=resetForm;
 $("#evF").addEventListener("input",syncForm);$("#evF").addEventListener("change",syncForm);
+function editEvent(id){const e=events.find(x=>x.id===id);if(!e)return;editing=e.id;
+  $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",e.repeat?"y":"o");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
+  $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()}
 function renderList(){const L=$("#list");
   L.innerHTML=events.length?events.map(e=>{const past=!e.repeat&&!nextOcc(e);
     return`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${past?`<span class="tag">Đã qua</span>`:""}<div class="acts"><button class="pill" data-e="${e.id}">Sửa</button><button class="pill danger" data-d="${e.id}">Xoá</button></div></div>`}).join(""):`<div class="empty">Chưa có sự kiện.</div>`;
-  L.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const e=events.find(x=>x.id===b.dataset.e);editing=e.id;
-    $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",e.repeat?"y":"o");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
-    $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()});
+  L.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>editEvent(b.dataset.e));
   L.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll();renderList();resetForm()}catch(e){alert(e.message)}}})}
 $("#evF").onsubmit=async ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
   try{await mutate("events","upsert",o);resetForm();renderAll();renderList()}catch(e){alert(e.message)}};
+
+/* ===== Xem chi tiết sự kiện (ai cũng xem được; sửa/xoá cần mật khẩu) ===== */
+const vd=$("#vd");let vdId=null;
+function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
+  const o=nextOcc(e),row=(k,v)=>`<div class="vrow"><span>${k}</span><div>${v}</div></div>`;
+  let when="Đã qua";if(o){const dd=diffD(o.s,T0);when=fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+` (${dd<=0?"đang diễn ra":"còn "+dd+" ngày"})`}
+  let lu="";if(e.cal==="s"&&o){const l=toLunar(o.s.getDate(),o.s.getMonth()+1,o.s.getFullYear());lu=row("Âm lịch",`${l.d}/${l.m} (ngày bắt đầu)`)}
+  $("#vdN").textContent=e.name;
+  $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
+  vd.showModal()}
+$("#vdEdit").onclick=()=>auth(()=>{vd.close();resetForm();renderList();editEvent(vdId);ed.showModal()});
+$("#vdDel").onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:vdId});vd.close();renderAll()}catch(e){alert(e.message)}}});
+document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
+document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
 /* ===== Thời tiết (Open-Meteo) – mô tả bằng chữ ===== */
 const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông"];

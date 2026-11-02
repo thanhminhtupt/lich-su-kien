@@ -1,36 +1,29 @@
-# Lịch Sự Kiện – Âm Dương
+# Lịch Sự Kiện – by Đức Anh Hoàng
 
-Web app tĩnh (HTML/CSS/JS thuần, không cần build) để lưu sự kiện theo **ngày âm lịch** và nhắc lại hằng năm (trước 7 ngày và 3 ngày). Hỗ trợ iPhone, iPad, PC và cài như ứng dụng (PWA).
+Web app tĩnh (HTML/CSS/JS thuần, không cần build) quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trước 7 ngày và 3 ngày. Giao diện kiểu iOS 26 (kính mờ), hỗ trợ iPhone, iPad, PC và cài như ứng dụng (PWA).
 
 ## Tính năng
-- Lịch tháng dương kèm ngày âm, khoanh tròn hôm nay, tô vàng nhạt ngày có sự kiện
-- Thời tiết hiện tại và dự báo 7 ngày (Open-Meteo)
-- Thêm/sửa/xoá sự kiện sau khi nhập mật khẩu; sự kiện tự rơi đúng ngày mỗi năm
-- Thông báo trong trang và thông báo trình duyệt
-- PWA: cài lên màn hình chính, chạy offline phần giao diện
+- Lịch tháng dương kèm ngày âm; danh sách "Sự kiện tháng này" theo tháng đang xem
+- Sự kiện chọn **âm lịch hoặc dương lịch**, **hằng năm** hoặc **một lần** (một lần hết hạn thì ngừng nhắc)
+- Khu "Nhắc lịch": đang diễn ra, nhắc lần 1 (còn 4–7 ngày), nhắc lần 2 (còn 1–3 ngày)
+- Thời tiết bằng chữ (nắng, âm u, mưa…), dự báo sáng/chiều/tối và 7 ngày (Open-Meteo)
+- Thêm/sửa/xoá sự kiện sau khi nhập mật khẩu
 
 ## Chạy thử
 ```bash
 npm run dev      # mở http://localhost:3000
 ```
 
-## Đưa lên GitHub
+## Cập nhật lên GitHub
 ```bash
-git init
 git add .
-git commit -m "Khởi tạo Lịch Sự Kiện"
-git branch -M main
-git remote add origin https://github.com/<tai-khoan>/lich-su-kien.git
-git push -u origin main
+git commit -m "Mô tả thay đổi"
+git push
 ```
-
-## Triển khai Vercel
-1. Vào [vercel.com/new](https://vercel.com/new), chọn **Import Git Repository** và chọn repo vừa tạo.
-2. Framework Preset: **Other**. Không cần Build Command; `vercel.json` đã đặt thư mục xuất là `public`.
-3. Bấm **Deploy**. Mỗi lần `git push` lên `main` Vercel tự cập nhật.
+Vercel tự deploy lại sau mỗi lần push lên `main`.
 
 ## Đổi mật khẩu
-Sửa hằng `PASS` ở đầu `public/js/app.js`. Lưu ý: đây là kiểm tra phía trình duyệt, chỉ ngăn người dùng thông thường.
+Sửa hằng `PASS` ở đầu `public/js/app.js`. Đây là kiểm tra phía trình duyệt, ai xem mã nguồn của trang đều đọc được.
 
 ## Lưu ý dữ liệu
-Sự kiện lưu trong `localStorage` của từng thiết bị (không đồng bộ giữa các máy). Muốn đồng bộ cần thêm backend (ví dụ Vercel KV/Supabase).
+Sự kiện lưu trong `localStorage` của từng thiết bị (không đồng bộ giữa các máy). Sự kiện cũ tự được chuyển sang định dạng mới.

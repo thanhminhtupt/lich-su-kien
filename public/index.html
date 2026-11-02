@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Lịch Sự Kiện – Âm Dương</title>
-<meta name="description" content="Lịch âm dương, nhắc sự kiện hằng năm theo ngày âm, kèm thời tiết.">
-<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
+<title>Lịch Sự Kiện</title>
+<meta name="description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm hoặc một lần, kèm dự báo thời tiết.">
+<meta name="theme-color" content="#eef3ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lịch Sự Kiện">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
@@ -16,63 +17,96 @@
 <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-<main>
-  <h1>LỊCH SỰ KIỆN ÂM – DƯƠNG</h1>
+<header class="hdr">
+  <h1>LỊCH SỰ KIỆN</h1>
+  <a class="by" href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a>
+</header>
 
-  <section class="top">
-    <div class="card today">
-      <div class="muted" id="wd"></div>
-      <div class="big" id="solar"></div>
-      <div class="lunar" id="lunar"></div>
-    </div>
-    <div class="card">
-      <div class="wx-now"><span class="e" id="wxE">…</span><div><div class="t" id="wxT">--°</div><div class="wx-loc" id="wxL">Đang lấy thời tiết…</div></div></div>
-      <div class="week" id="wxW"></div>
-    </div>
+<main class="layout">
+  <section class="glass today" aria-label="Hôm nay">
+    <div class="wd" id="wd"></div>
+    <div class="big" id="solar"></div>
+    <div class="lunar" id="lunar"></div>
   </section>
 
-  <section class="card">
+  <section class="glass wx" aria-label="Thời tiết">
+    <div class="wx-top">
+      <div>
+        <div class="t" id="wxT">--°</div>
+        <div class="d" id="wxD">Đang lấy thời tiết…</div>
+        <div class="loc" id="wxL"></div>
+      </div>
+      <div class="hl" id="wxH"></div>
+    </div>
+    <div class="parts" id="wxP"></div>
+    <div class="week" id="wxW"></div>
+  </section>
+
+  <section class="glass remind" aria-label="Nhắc lịch">
+    <div class="sec-h"><h2>Nhắc lịch<span class="badge" id="nb" hidden></span></h2><button class="pill" id="perm">Bật thông báo</button></div>
+    <div id="notes"></div>
+  </section>
+
+  <section class="glass cal" aria-label="Lịch tháng">
     <div class="bar">
-      <button id="prev" aria-label="Tháng trước">‹</button>
+      <button class="ic" id="prev" aria-label="Tháng trước">‹</button>
       <select id="mSel" aria-label="Tháng"></select>
       <select id="ySel" aria-label="Năm"></select>
-      <button id="next" aria-label="Tháng sau">›</button>
-      <button id="goToday">Hôm nay</button>
+      <button class="ic" id="next" aria-label="Tháng sau">›</button>
       <span class="sp"></span>
-      <button class="primary" id="addBtn">+ Nhập sự kiện</button>
+      <button class="pill" id="goToday">Hôm nay</button>
+      <button class="pill primary" id="addBtn">+ Sự kiện</button>
     </div>
     <div class="grid" id="cal"></div>
-    <div class="detail" id="detail">Chọn một ngày để xem sự kiện.</div>
+    <div class="detail" id="detail"></div>
   </section>
 
-  <section class="card">
-    <div class="bar"><h2 style="margin:0">Thông báo<span class="badge" id="nb" hidden></span></h2><span class="sp"></span><button id="perm">Bật thông báo trình duyệt</button></div>
-    <div id="notes"></div>
+  <section class="glass month" aria-label="Sự kiện trong tháng">
+    <div class="sec-h"><h2 id="mTitle">Sự kiện trong tháng</h2></div>
+    <div id="mList"></div>
   </section>
 </main>
 
-<dialog id="pw"><form id="pwF">
+<footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></footer>
+
+<dialog id="pw"><form id="pwF" class="sheet">
   <h2>Nhập mật khẩu</h2>
   <input type="password" id="pwI" autocomplete="off" placeholder="Mật khẩu">
   <div class="err" id="pwE"></div>
-  <div class="acts"><button type="button" data-close>Huỷ</button><button class="primary">Xác nhận</button></div>
+  <div class="acts"><button type="button" class="pill" data-close>Huỷ</button><button class="pill primary">Xác nhận</button></div>
 </form></dialog>
 
-<dialog id="ed">
+<dialog id="ed"><div class="sheet">
   <h2>Quản lý sự kiện</h2>
-  <div id="list" style="margin-bottom:12px;max-height:200px;overflow:auto"></div>
+  <div id="list" class="elist"></div>
   <form id="evF">
+    <h3 id="fTitle">Thêm sự kiện mới</h3>
     <label>Tên sự kiện<input id="fN" required maxlength="80"></label>
-    <div class="row">
-      <label>Tháng âm<select id="fM"></select></label>
-      <label>Từ ngày âm<input id="fA" type="number" min="1" max="30" required></label>
-      <label>Đến ngày âm<input id="fB" type="number" min="1" max="30" required></label>
+
+    <div class="two">
+      <fieldset class="seg"><legend>Loại ngày</legend>
+        <label><input type="radio" name="cal" value="l" checked><span>Âm lịch</span></label>
+        <label><input type="radio" name="cal" value="s"><span>Dương lịch</span></label>
+      </fieldset>
+      <fieldset class="seg"><legend>Lặp lại</legend>
+        <label><input type="radio" name="rep" value="y" checked><span>Hằng năm</span></label>
+        <label><input type="radio" name="rep" value="o"><span>Một lần</span></label>
+      </fieldset>
     </div>
+
+    <div class="row">
+      <label>Tháng<select id="fM"></select></label>
+      <label>Từ ngày<input id="fA" type="number" inputmode="numeric" min="1" max="30" required></label>
+      <label>Đến ngày<input id="fB" type="number" inputmode="numeric" min="1" max="30" required></label>
+    </div>
+    <label id="fYw" hidden><span id="fYl">Năm âm lịch</span><input id="fY" type="number" inputmode="numeric" min="2000" max="2100"></label>
+    <div class="prev" id="fP"></div>
+
     <label>Giờ bắt đầu (tuỳ chọn)<input id="fT" type="time"></label>
     <label>Ghi chú<textarea id="fC" rows="3" maxlength="500"></textarea></label>
-    <div class="acts"><button type="button" data-close>Đóng</button><button type="button" id="fReset">Mới</button><button class="primary" id="fSave">Lưu sự kiện</button></div>
+    <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button type="button" class="pill" id="fReset">Mới</button><button class="pill primary" id="fSave">Lưu sự kiện</button></div>
   </form>
-</dialog>
+</div></dialog>
 
 <script src="/js/app.js" defer></script>
 </body>

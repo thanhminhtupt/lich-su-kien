@@ -1,9 +1,11 @@
-const $=s=>document.querySelector(s), PASS="29081989@", KEY="lich-events-v1", SENT="lich-sent-v1";
+/* Lịch Sự Kiện – by Đức Anh Hoàng */
+const $=s=>document.querySelector(s),PASS="29081989@",KEY="lich-events-v1",SENT="lich-sent-v1";
 const WD=["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"];
 const CAN=["Giáp","Ất","Bính","Đinh","Mậu","Kỷ","Canh","Tân","Nhâm","Quý"],CHI=["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const day0=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
 const diffD=(a,b)=>Math.round((day0(a)-day0(b))/864e5);
+const pad=n=>String(n).padStart(2,"0"),fmt=d=>pad(d.getDate())+"/"+pad(d.getMonth()+1),fmtY=d=>fmt(d)+"/"+d.getFullYear();
 
 /* ===== Âm lịch (thuật toán Hồ Ngọc Đức, múi giờ +7) ===== */
 const TZ=7,PI=Math.PI,fl=Math.floor;
@@ -29,18 +31,36 @@ function toSolar(ld,lmn,ly){let a,b;if(lmn<11){a=lm11(ly-1);b=lm11(ly)}else{a=lm
  if(b-a>365&&off>=leapOff(a))off+=1;const[d,m,y]=jdTo(nmDay(k+off)+ld-1);return new Date(y,m-1,d)}
 const canChi=y=>CAN[(y+6)%10]+" "+CHI[(y+8)%12];
 
-/* ===== Dữ liệu ===== */
+
+
+/* ===== Dữ liệu sự kiện =====
+   {id,name,cal:"l"|"s" (âm/dương),m,a,b (tháng, từ ngày, đến ngày),repeat:true|false,year (chỉ khi một lần),time,note} */
+const now=new Date(),T0=day0(now);
 let events=[];
-try{events=JSON.parse(localStorage.getItem(KEY)||"null")||[]}catch{}
-if(!events.length&&!localStorage.getItem(KEY+"-init")){
-  events=[{id:"e1",name:"Lễ hội Dinh Thầy Thím",lm:9,a:14,b:16,time:"05:00",note:"Sự kiện bắt đầu lúc 5h sáng."}];
-  try{localStorage.setItem(KEY+"-init","1")}catch{}save()}
+const norm=e=>e.cal?e:{id:e.id,name:e.name,cal:"l",m:e.lm,a:e.a,b:e.b,repeat:true,year:null,time:e.time||"",note:e.note||""};
+try{events=(JSON.parse(localStorage.getItem(KEY)||"[]")||[]).map(norm)}catch{}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(events))}catch{}}
-const eventsOn=date=>{const l=toLunar(date.getDate(),date.getMonth()+1,date.getFullYear());
-  return l.leap?[]:events.filter(e=>e.lm===l.m&&l.d>=e.a&&l.d<=e.b)};
+if(!events.length&&!localStorage.getItem(KEY+"-init")){
+  events=[{id:"e1",name:"Lễ hội Dinh Thầy Thím",cal:"l",m:9,a:14,b:16,repeat:true,year:null,time:"05:00",note:"Sự kiện bắt đầu lúc 5h sáng."}];
+  try{localStorage.setItem(KEY+"-init","1")}catch{}save()}
+
+const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m;
+const repTxt=e=>e.repeat?"Hằng năm":"Một lần · năm "+e.year;
+
+/* Khoảng ngày dương lịch của sự kiện trong năm y (năm âm nếu là sự kiện âm lịch) */
+function occ(e,y){
+  if(e.cal==="s"){const n=new Date(y,e.m,0).getDate();return{s:new Date(y,e.m-1,Math.min(e.a,n)),en:new Date(y,e.m-1,Math.min(e.b,n))}}
+  return{s:toSolar(e.a,e.m,y),en:toSolar(e.b,e.m,y)}}
+/* Lần diễn ra kế tiếp (chưa kết thúc). Sự kiện một lần đã qua → null */
+function nextOcc(e){let best=null;const Y=now.getFullYear(),ys=e.repeat?[Y-1,Y,Y+1]:[e.year];
+  for(const y of ys){const o=occ(e,y);if(day0(o.en)>=T0&&(!best||o.s<best.s))best={s:o.s,en:o.en,y}}return best}
+function eventsOn(date){const d=date.getDate(),m=date.getMonth()+1,y=date.getFullYear();let l=null;
+  return events.filter(e=>{
+    if(e.cal==="s")return e.m===m&&d>=e.a&&d<=e.b&&(e.repeat||e.year===y);
+    l=l||toLunar(d,m,y);
+    return !l.leap&&e.m===l.m&&l.d>=e.a&&l.d<=e.b&&(e.repeat||e.year===l.y)})}
 
 /* ===== Hôm nay ===== */
-const now=new Date(),T0=day0(now);
 function renderToday(){const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());
   $("#wd").textContent=WD[now.getDay()];
   $("#solar").textContent=`Ngày ${now.getDate()} tháng ${now.getMonth()+1} năm ${now.getFullYear()}`;
@@ -54,36 +74,42 @@ for(let y=now.getFullYear()-5;y<=now.getFullYear()+15;y++)yS.add(new Option(y,y)
 for(let i=1;i<=12;i++)$("#fM").add(new Option("Tháng "+i,i));
 function renderCal(){mS.value=vm;yS.value=vy;
   const g=$("#cal");g.innerHTML=["T2","T3","T4","T5","T6","T7","CN"].map(d=>`<div class="dow">${d}</div>`).join("");
-  const first=new Date(vy,vm,1),lead=(first.getDay()+6)%7,start=new Date(vy,vm,1-lead);
+  const lead=(new Date(vy,vm,1).getDay()+6)%7,start=new Date(vy,vm,1-lead);
   for(let i=0;i<42;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);if(i>=35&&d.getMonth()!==vm)break;
     const l=toLunar(d.getDate(),d.getMonth()+1,d.getFullYear()),ev=eventsOn(d),b=document.createElement("button");
-    b.className="day"+(d.getMonth()!==vm?" out":"")+(ev.length?" ev":"")+(+d===+T0?" today":"")+(+d===+sel?" sel":"");
+    b.className="day"+(d.getMonth()!==vm?" out":"")+(d.getDay()===0?" sun":"")+(ev.length?" ev":"")+(+d===+T0?" today":"")+(+d===+sel?" sel":"");
     b.innerHTML=`<span class="s">${d.getDate()}</span><span class="l">${l.d===1?l.d+"/"+l.m:l.d}</span>`;
     b.title=ev.length?ev.map(e=>e.name+(e.time?" ("+e.time+")":"")).join("\n"):`Âm lịch: ${l.d}/${l.m}`;
-    b.onclick=()=>{sel=d;if(d.getMonth()!==vm){vm=d.getMonth();vy=d.getFullYear()}renderCal();renderDetail()};
+    b.onclick=()=>{sel=d;if(d.getMonth()!==vm){vm=d.getMonth();vy=d.getFullYear()}renderCal();renderDetail();renderMonth()};
     g.append(b)}}
 function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel);
-  $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${sel.getDate()}/${sel.getMonth()+1}/${sel.getFullYear()}</b> · âm lịch ${l.d}/${l.m}`+
-   (ev.length?ev.map(e=>`<div class="item"><b>${esc(e.name)}</b><span class="tag">Âm ${e.a}–${e.b}/${e.lm}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="item muted">Không có sự kiện.</div>`)}
-mS.onchange=()=>{vm=+mS.value;renderCal()};yS.onchange=()=>{vy=+yS.value;renderCal()};
-$("#prev").onclick=()=>{vm--;if(vm<0){vm=11;vy--}renderCal()};
-$("#next").onclick=()=>{vm++;if(vm>11){vm=0;vy++}renderCal()};
-$("#goToday").onclick=()=>{vy=now.getFullYear();vm=now.getMonth();sel=T0;renderCal();renderDetail()};
+  $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · âm lịch ${l.d}/${l.m}`+
+   (ev.length?ev.map(e=>`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+/* Danh sách sự kiện của tháng đang xem */
+function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
+  for(let i=1;i<=n;i++)eventsOn(new Date(vy,vm,i)).forEach(e=>{const r=mp.get(e.id)||{e,f:i,l:i};r.l=i;mp.set(e.id,r)});
+  $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
+  const L=[...mp.values()].sort((a,b)=>a.f-b.f),box=$("#mList");
+  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)} · ${repTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small></span></button>`).join(""):`<div class="empty">Tháng này chưa có sự kiện.</div>`;
+  box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sel=new Date(vy,vm,+b.dataset.d);renderCal();renderDetail()})}
+mS.onchange=()=>{vm=+mS.value;renderCal();renderMonth()};yS.onchange=()=>{vy=+yS.value;renderCal();renderMonth()};
+$("#prev").onclick=()=>{vm--;if(vm<0){vm=11;vy--}renderCal();renderMonth()};
+$("#next").onclick=()=>{vm++;if(vm>11){vm=0;vy++}renderCal();renderMonth()};
+$("#goToday").onclick=()=>{vy=now.getFullYear();vm=now.getMonth();sel=T0;renderCal();renderDetail();renderMonth()};
 
-/* ===== Thông báo: trước 7 ngày và 3 ngày ===== */
-function nextOcc(e){let best=null;
-  for(let y=now.getFullYear()-1;y<=now.getFullYear()+1;y++){const s=toSolar(e.a,e.lm,y),en=toSolar(e.b,e.lm,y);
-    if(day0(en)>=T0&&(!best||s<best.s))best={s,en,y}}return best}
-function renderNotes(){const out=[];
-  events.forEach(e=>{const o=nextOcc(e);if(!o)return;const dd=diffD(o.s,T0);
-    if(dd<=0&&diffD(o.en,T0)>=0)out.push({e,o,dd,msg:"Đang diễn ra",stage:"now"});
-    else if(dd>0&&dd<=3)out.push({e,o,dd,msg:`Còn ${dd} ngày nữa (nhắc lần 2)`,stage:"3"});
-    else if(dd>3&&dd<=7)out.push({e,o,dd,msg:`Còn ${dd} ngày nữa (nhắc lần 1)`,stage:"7"})});
-  out.sort((a,b)=>a.dd-b.dd);
-  const nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;
-  $("#notes").innerHTML=out.length?out.map(n=>`<div class="item"><b>${esc(n.e.name)}</b><span class="tag">${n.msg}</span><small>${n.o.s.getDate()}/${n.o.s.getMonth()+1} – ${n.o.en.getDate()}/${n.o.en.getMonth()+1}/${n.o.en.getFullYear()} dương lịch (âm ${n.e.a}–${n.e.b}/${n.e.lm})${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small>${esc(n.e.note)}</small>`:""}</div>`).join(""):`<div class="muted">Chưa có sự kiện nào trong 7 ngày tới.</div>`;
-  if("Notification"in window&&Notification.permission==="granted"){let sent={};try{sent=JSON.parse(localStorage.getItem(SENT)||"{}")}catch{}
-    out.forEach(n=>{const k=n.e.id+"|"+n.o.y+"|"+n.stage;if(!sent[k]){sent[k]=1;new Notification(n.e.name,{body:n.msg+(n.e.time?" · "+n.e.time:"")})}});
+/* ===== Nhắc lịch: trước 7 ngày, trước 3 ngày, đang diễn ra. Sự kiện một lần hết hạn thì thôi ===== */
+function remList(){const out=[],up=[];
+  events.forEach(e=>{const o=nextOcc(e);if(!o)return;const dd=diffD(o.s,T0),it={e,o,dd,run:dd<=0};up.push(it);if(dd<=7)out.push(it)});
+  const by=(a,b)=>a.o.s-b.o.s;return{out:out.sort(by),up:up.sort(by)}}
+function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;
+  $("#notes").innerHTML=out.length?out.map(n=>{const st=n.run?"now":n.dd<=3?"w3":"w7",lbl=n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":"Nhắc lần 1";
+    return`<div class="rem ${st}"><div class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></div><div class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small>${esc(n.e.note)}</small>`:""}<span class="chip">${lbl} · ${repTxt(n.e)}</span></div></div>`}).join("")
+   :up.length?`<div class="empty">Không có nhắc nhở trong 7 ngày tới.<small>Sắp tới: <b>${esc(up[0].e.name)}</b> – ${fmtY(up[0].o.s)} (còn ${up[0].dd} ngày)</small></div>`:`<div class="empty">Chưa có sự kiện nào.</div>`;
+  const pm=$("#perm"),ok="Notification"in window;
+  pm.textContent=!ok?"Không hỗ trợ":Notification.permission==="granted"?"Đã bật thông báo":Notification.permission==="denied"?"Thông báo bị chặn":"Bật thông báo";
+  if(ok&&Notification.permission==="granted"){let sent={};try{sent=JSON.parse(localStorage.getItem(SENT)||"{}")}catch{}
+    out.forEach(n=>{const st=n.run?"now":n.dd<=3?"3":"7",k=n.e.id+"|"+n.o.y+"|"+st;
+      if(!sent[k]){sent[k]=1;try{new Notification(n.e.name,{body:(n.run?"Đang diễn ra":"Còn "+n.dd+" ngày nữa")+(n.e.time?" · "+n.e.time:"")})}catch{}}});
     try{localStorage.setItem(SENT,JSON.stringify(sent))}catch{}}}
 $("#perm").onclick=async()=>{if(!("Notification"in window))return alert("Trình duyệt chưa hỗ trợ thông báo.");await Notification.requestPermission();renderNotes()};
 
@@ -92,27 +118,53 @@ const pw=$("#pw"),ed=$("#ed");let editing=null;
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
 $("#addBtn").onclick=()=>{$("#pwI").value="";$("#pwE").textContent="";pw.showModal();$("#pwI").focus()};
 $("#pwF").onsubmit=ev=>{ev.preventDefault();if($("#pwI").value===PASS){pw.close();resetForm();renderList();ed.showModal()}else $("#pwE").textContent="Mật khẩu không đúng."};
-function resetForm(){editing=null;$("#evF").reset();$("#fSave").textContent="Lưu sự kiện"}
+const radio=n=>document.querySelector(`input[name=${n}]:checked`).value;
+const setRadio=(n,v)=>{document.querySelector(`input[name=${n}][value=${v}]`).checked=true};
+function readForm(){let a=+$("#fA").value,b=+$("#fB").value;if(!a||!b)return null;
+  const cal=radio("cal"),rep=radio("rep")==="y",mx=cal==="s"?31:30;if(b<a)[a,b]=[b,a];a=Math.min(Math.max(a,1),mx);b=Math.min(Math.max(b,1),mx);
+  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m:+$("#fM").value,a,b,repeat:rep,year:rep?null:(+$("#fY").value||now.getFullYear()),time:$("#fT").value,note:$("#fC").value.trim()}}
+function syncForm(){const rep=radio("rep")==="y",cal=radio("cal");
+  $("#fYw").hidden=rep;$("#fYl").textContent=cal==="l"?"Năm âm lịch":"Năm dương lịch";$("#fA").max=$("#fB").max=cal==="s"?31:30;
+  const e=readForm(),p=$("#fP");p.textContent="";if(!e)return;
+  try{const o=e.repeat?nextOcc(e):occ(e,e.year);if(!o)return;
+    const pre=e.repeat?"Lần tới: ":"Ngày: ";
+    if(cal==="l")p.textContent=pre+"dương lịch "+fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"");
+    else{const l=toLunar(o.s.getDate(),o.s.getMonth()+1,o.s.getFullYear());p.textContent=pre+"âm lịch "+l.d+"/"+l.m+" (ngày bắt đầu)"}}catch{}}
+function resetForm(){editing=null;$("#evF").reset();$("#fY").value=now.getFullYear();$("#fSave").textContent="Lưu sự kiện";$("#fTitle").textContent="Thêm sự kiện mới";syncForm()}
 $("#fReset").onclick=resetForm;
-function renderList(){$("#list").innerHTML=events.length?events.map(e=>`<div class="item"><b>${esc(e.name)}</b><span class="tag">Âm ${e.a}–${e.b}/${e.lm}</span><div class="acts" style="justify-content:flex-start;margin:6px 0 0"><button data-e="${e.id}">Sửa</button><button class="danger" data-d="${e.id}">Xoá</button></div></div>`).join(""):`<div class="muted">Chưa có sự kiện.</div>`;
-  $("#list").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const e=events.find(x=>x.id===b.dataset.e);editing=e.id;$("#fN").value=e.name;$("#fM").value=e.lm;$("#fA").value=e.a;$("#fB").value=e.b;$("#fT").value=e.time||"";$("#fC").value=e.note||"";$("#fSave").textContent="Cập nhật"});
-  $("#list").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("Xoá sự kiện này?")){events=events.filter(x=>x.id!==b.dataset.d);save();renderAll();renderList();resetForm()}})}
-$("#evF").onsubmit=ev=>{ev.preventDefault();let a=+$("#fA").value,b=+$("#fB").value;if(b<a)[a,b]=[b,a];
-  const o={id:editing||"e"+Date.now(),name:$("#fN").value.trim(),lm:+$("#fM").value,a,b,time:$("#fT").value,note:$("#fC").value.trim()};
+$("#evF").addEventListener("input",syncForm);$("#evF").addEventListener("change",syncForm);
+function renderList(){const L=$("#list");
+  L.innerHTML=events.length?events.map(e=>{const past=!e.repeat&&!nextOcc(e);
+    return`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${past?`<span class="tag">Đã qua</span>`:""}<div class="acts"><button class="pill" data-e="${e.id}">Sửa</button><button class="pill danger" data-d="${e.id}">Xoá</button></div></div>`}).join(""):`<div class="empty">Chưa có sự kiện.</div>`;
+  L.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const e=events.find(x=>x.id===b.dataset.e);editing=e.id;
+    $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",e.repeat?"y":"o");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
+    $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()});
+  L.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("Xoá sự kiện này?")){events=events.filter(x=>x.id!==b.dataset.d);save();renderAll();renderList();resetForm()}})}
+$("#evF").onsubmit=ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
   events=editing?events.map(x=>x.id===editing?o:x):[...events,o];save();resetForm();renderAll();renderList()};
 
-/* ===== Thời tiết (Open-Meteo) ===== */
-const WC=c=>c===0?["☀️","Trời quang"]:c<=2?["🌤️","Ít mây"]:c===3?["☁️","Nhiều mây"]:c<=48?["🌫️","Sương mù"]:c<=57?["🌦️","Mưa phùn"]:c<=67?["🌧️","Mưa"]:c<=77?["❄️","Tuyết"]:c<=82?["🌧️","Mưa rào"]:["⛈️","Dông"];
+/* ===== Thời tiết (Open-Meteo) – mô tả bằng chữ ===== */
+const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông"];
+const cat=c=>c<=1?0:c===2?1:c===3?2:c<=48?3:c<=67?4:c<=77?5:c<=82?4:c<=94?5:6;
+function part(j,a,b){const cs=j.hourly.weather_code.slice(a,b),ps=j.hourly.precipitation_probability.slice(a,b),n=Array(7).fill(0);
+  cs.forEach(c=>n[cat(c)]++);let k=n.indexOf(Math.max(...n));const pm=Math.max(0,...ps.map(x=>x||0));
+  if(pm>=60&&k<4&&cs.some(c=>cat(c)>=4))k=cs.some(c=>cat(c)===6)?6:4;return[CN[k],pm]}
 async function weather(lat,lon,label){try{
-  const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`),j=await r.json();
-  const [e,t]=WC(j.current.weather_code);$("#wxE").textContent=e;$("#wxT").textContent=Math.round(j.current.temperature_2m)+"°C";$("#wxL").textContent=t+" · "+label;
-  $("#wxW").innerHTML=j.daily.time.map((d,i)=>{const dt=new Date(d+"T00:00");return`<div><b>${i?["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()]:"Nay"}</b><span class="e">${WC(j.daily.weather_code[i])[0]}</span>${Math.round(j.daily.temperature_2m_max[i])}° <span style="opacity:.6">${Math.round(j.daily.temperature_2m_min[i])}°</span></div>`}).join("")
- }catch{$("#wxL").textContent="Không tải được thời tiết (cần kết nối mạng)."}}
+  const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`);
+  if(!r.ok)throw 0;const j=await r.json(),c=cat(j.current.weather_code);
+  $("#wxT").textContent=Math.round(j.current.temperature_2m)+"°C";
+  $("#wxD").textContent=c===0&&!j.current.is_day?"Trời quang":CN[c];$("#wxL").textContent=label;
+  $("#wxH").innerHTML=`Cao nhất ${Math.round(j.daily.temperature_2m_max[0])}°<br>Thấp nhất ${Math.round(j.daily.temperature_2m_min[0])}°`;
+  $("#wxP").innerHTML=[["Sáng",6,12],["Chiều",12,18],["Tối",18,24]].map(([n,a,b])=>{const[t,p]=part(j,a,b);return`<div><small>${n}</small><b>${t}</b><small>Mưa ${p}%</small></div>`}).join("");
+  $("#wxW").innerHTML=j.daily.time.map((d,i)=>{const dt=new Date(d+"T00:00");
+    return`<div class="${i?"":"now"}"><small>${i?["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()]:"Hôm nay"}</small><b>${CN[cat(j.daily.weather_code[i])]}</b><span>${Math.round(j.daily.temperature_2m_max[i])}°/${Math.round(j.daily.temperature_2m_min[i])}°</span><small>Mưa ${j.daily.precipitation_probability_max[i]??0}%</small></div>`}).join("")
+ }catch{$("#wxD").textContent="Không tải được thời tiết";$("#wxL").textContent="Cần kết nối mạng."}}
 function initWx(){const fb=()=>weather(11.94,108.44,"Lâm Đồng (mặc định)");
   if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>weather(p.coords.latitude,p.coords.longitude,"Vị trí của bạn"),fb,{timeout:8000});else fb()}
 
-function renderAll(){renderToday();renderCal();renderDetail();renderNotes()}
-renderAll();initWx();
-setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);
-
-if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes()}
+if(typeof document!=="undefined"&&!globalThis.__TEST__){
+  renderAll();initWx();resetForm();
+  setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);
+  if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}

@@ -1,0 +1,1 @@
+Đặt file SVN-Avo.woff2 (hoặc .ttf) và SVN-Avo-Bold.woff2 (hoặc .ttf) vào thư mục này.

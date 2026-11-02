@@ -23,13 +23,14 @@
 </header>
 
 <main class="layout">
-  <section class="glass today" aria-label="Hôm nay">
+  <section class="card today" aria-label="Hôm nay">
+    <div class="hello" id="hello"></div>
     <div class="wd" id="wd"></div>
     <div class="big" id="solar"></div>
     <div class="lunar" id="lunar"></div>
   </section>
 
-  <section class="glass wx" aria-label="Thời tiết">
+  <section class="card wx" aria-label="Thời tiết">
     <div class="wx-top">
       <div>
         <div class="t" id="wxT">--°</div>
@@ -42,12 +43,12 @@
     <div class="week" id="wxW"></div>
   </section>
 
-  <section class="glass remind" aria-label="Nhắc lịch">
+  <section class="card remind" aria-label="Nhắc lịch">
     <div class="sec-h"><h2>Nhắc lịch<span class="badge" id="nb" hidden></span></h2><button class="pill" id="perm">Bật thông báo</button></div>
     <div id="notes"></div>
   </section>
 
-  <section class="glass cal" aria-label="Lịch tháng">
+  <section class="card cal" aria-label="Lịch tháng">
     <div class="bar">
       <button class="ic" id="prev" aria-label="Tháng trước">‹</button>
       <select id="mSel" aria-label="Tháng"></select>
@@ -60,22 +61,22 @@
     <div class="detail" id="detail"></div>
   </section>
 
-  <section class="glass month" aria-label="Sự kiện trong tháng">
+  <section class="card month" aria-label="Sự kiện trong tháng">
     <div class="sec-h"><h2 id="mTitle">Sự kiện trong tháng</h2></div>
     <div id="mList"></div>
   </section>
 
-  <section class="glass places" aria-label="Ghi chú địa điểm">
+  <section class="card places" aria-label="Ghi chú địa điểm">
     <div class="sec-h">
       <h2>Ghi chú địa điểm<span class="badge ok" id="pCount"></span></h2>
       <button class="pill primary" id="pAdd">+ Thêm địa điểm</button>
     </div>
     <input type="search" id="pSearch" class="search" placeholder="Tìm địa điểm hoặc ghi chú…" aria-label="Tìm địa điểm" autocomplete="off">
-    <div class="pgrid" id="pList"></div>
+    <div class="plist" id="pList"></div>
   </section>
 </main>
 
-<footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></footer>
+<footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a><div id="sync"></div></footer>
 
 <dialog id="pw"><form id="pwF" class="sheet">
   <h2>Nhập mật khẩu</h2>

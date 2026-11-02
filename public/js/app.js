@@ -1,5 +1,5 @@
 /* Lịch Sự Kiện – by Đức Anh Hoàng */
-const $=s=>document.querySelector(s),PASS="29081989@",KEY="lich-events-v1",SENT="lich-sent-v1";
+const $=s=>document.querySelector(s),PASS="29081989@",KEY="lich-events-v1",PKEY="lich-places-v1",SENT="lich-sent-v1";
 const WD=["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"];
 const CAN=["Giáp","Ất","Bính","Đinh","Mậu","Kỷ","Canh","Tân","Nhâm","Quý"],CHI=["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -36,13 +36,36 @@ const canChi=y=>CAN[(y+6)%10]+" "+CHI[(y+8)%12];
 /* ===== Dữ liệu sự kiện =====
    {id,name,cal:"l"|"s" (âm/dương),m,a,b (tháng, từ ngày, đến ngày),repeat:true|false,year (chỉ khi một lần),time,note} */
 const now=new Date(),T0=day0(now);
-let events=[];
+let events=[],places=[],serverV=+localStorage.getItem("lich-v")||0,mode=localStorage.getItem("lich-mode")||"local";
 const norm=e=>e.cal?e:{id:e.id,name:e.name,cal:"l",m:e.lm,a:e.a,b:e.b,repeat:true,year:null,time:e.time||"",note:e.note||""};
 try{events=(JSON.parse(localStorage.getItem(KEY)||"[]")||[]).map(norm)}catch{}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(events))}catch{}}
-if(!events.length&&!localStorage.getItem(KEY+"-init")){
+try{places=JSON.parse(localStorage.getItem(PKEY)||"[]")||[]}catch{}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(events));localStorage.setItem(PKEY,JSON.stringify(places))}catch{}}
+if(!events.length&&!places.length&&!serverV&&!localStorage.getItem(KEY+"-init")){
   events=[{id:"e1",name:"Lễ hội Dinh Thầy Thím",cal:"l",m:9,a:14,b:16,repeat:true,year:null,time:"05:00",note:"Sự kiện bắt đầu lúc 5h sáng."}];
   try{localStorage.setItem(KEY+"-init","1")}catch{}save()}
+
+/* ===== Đồng bộ dữ liệu dùng chung (/api/store). Không có máy chủ thì lưu trên máy ===== */
+function applyServer(d){events=(d.events||[]).map(norm);places=d.places||[];serverV=d.v||0;try{localStorage.setItem("lich-v",serverV)}catch{}save()}
+function setSync(s){$("#sync").textContent=s}
+const hhmm=()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes())};
+async function api(body,p=pwd){let r;
+  try{r=await fetch("/api/store",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,password:p})})}catch{throw new Error("Không kết nối được máy chủ.")}
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Lỗi máy chủ ("+r.status+").");return j}
+async function sync(){
+  try{const r=await fetch("/api/store",{cache:"no-store"});
+    if(r.status===404||r.status===503){mode="local";try{localStorage.setItem("lich-mode",mode)}catch{}setSync("Dữ liệu lưu trên máy này (chưa kết nối máy chủ).");return}
+    if(!r.ok)throw 0;const d=await r.json();mode="server";try{localStorage.setItem("lich-mode",mode)}catch{}
+    if(d.v&&d.v!==serverV){applyServer(d);renderAll()}
+    setSync("Dữ liệu dùng chung · cập nhật lúc "+hhmm())}
+  catch{setSync("Đang ngoại tuyến · hiển thị dữ liệu đã lưu trên máy.")}}
+function localApply(kind,op,x){let L=kind==="events"?events:places;
+  L=op==="delete"?L.filter(i=>i.id!==x.id):L.some(i=>i.id===x.id)?L.map(i=>i.id===x.id?x:i):[...L,x];
+  if(kind==="events")events=L;else places=L;save()}
+async function mutate(kind,op,x){
+  if(mode!=="server")return localApply(kind,op,x);
+  if(!serverV&&(events.length||places.length))await api({op:"import",events,places});
+  applyServer(await api({op,kind,item:x,id:x.id}))}
 
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m;
 const repTxt=e=>e.repeat?"Hằng năm":"Một lần · năm "+e.year;
@@ -61,10 +84,19 @@ function eventsOn(date){const d=date.getDate(),m=date.getMonth()+1,y=date.getFul
     return !l.leap&&e.m===l.m&&l.d>=e.a&&l.d<=e.b&&(e.repeat||e.year===l.y)})}
 
 /* ===== Hôm nay ===== */
-function renderToday(){const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());
+const greet=()=>{const h=new Date().getHours();return"Xin chào "+(h>=5&&h<11?"buổi sáng":h>=11&&h<13?"buổi trưa":h>=13&&h<18?"buổi chiều":h>=18&&h<22?"buổi tối":"buổi đêm")};
+function renderToday(){$("#hello").textContent=greet();const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());
   $("#wd").textContent=WD[now.getDay()];
   $("#solar").textContent=`Ngày ${now.getDate()} tháng ${now.getMonth()+1} năm ${now.getFullYear()}`;
   $("#lunar").textContent=`Âm lịch: ngày ${l.d} tháng ${l.m}${l.leap?" (nhuận)":""} năm ${canChi(l.y)}`}
+
+/* ===== Ngày lễ ===== */
+const HS={"1/1":"Tết Dương lịch","14/2":"Lễ tình nhân","8/3":"Quốc tế Phụ nữ","30/4":"Giải phóng miền Nam","1/5":"Quốc tế Lao động","1/6":"Quốc tế Thiếu nhi","2/9":"Quốc khánh","20/10":"Phụ nữ Việt Nam","20/11":"Nhà giáo Việt Nam","25/12":"Giáng sinh"};
+const HL={"1/1":"Mùng 1 Tết Nguyên đán","2/1":"Mùng 2 Tết","3/1":"Mùng 3 Tết","15/1":"Rằm tháng Giêng","10/3":"Giỗ Tổ Hùng Vương","15/4":"Lễ Phật đản","5/5":"Tết Đoan Ngọ","15/7":"Lễ Vu Lan","15/8":"Tết Trung thu","23/12":"Ông Táo chầu trời"};
+function holiday(d,l){const r=[],s=HS[d.getDate()+"/"+(d.getMonth()+1)];if(s)r.push(s);
+  if(!l.leap){const k=HL[l.d+"/"+l.m];if(k)r.push(k);
+    if(l.m===12){const n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1),nl=toLunar(n.getDate(),n.getMonth()+1,n.getFullYear());if(nl.d===1&&nl.m===1)r.push("Giao thừa")}}
+  return r}
 
 /* ===== Lịch tháng ===== */
 let vy=now.getFullYear(),vm=now.getMonth(),sel=T0;
@@ -76,14 +108,14 @@ function renderCal(){mS.value=vm;yS.value=vy;
   const g=$("#cal");g.innerHTML=["T2","T3","T4","T5","T6","T7","CN"].map(d=>`<div class="dow">${d}</div>`).join("");
   const lead=(new Date(vy,vm,1).getDay()+6)%7,start=new Date(vy,vm,1-lead);
   for(let i=0;i<42;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);if(i>=35&&d.getMonth()!==vm)break;
-    const l=toLunar(d.getDate(),d.getMonth()+1,d.getFullYear()),ev=eventsOn(d),b=document.createElement("button");
-    b.className="day"+(d.getMonth()!==vm?" out":"")+(d.getDay()===0?" sun":"")+(ev.length?" ev":"")+(+d===+T0?" tdy":"")+(+d===+sel?" sel":"");
+    const l=toLunar(d.getDate(),d.getMonth()+1,d.getFullYear()),ev=eventsOn(d),hol=holiday(d,l),b=document.createElement("button");
+    b.className="day"+(d.getMonth()!==vm?" out":"")+(d.getDay()===0?" sun":"")+(hol.length?" hol":"")+(ev.length?" ev":"")+(+d===+T0?" tdy":"")+(+d===+sel?" sel":"");
     b.innerHTML=`<span class="s">${d.getDate()}</span><span class="l">${l.d===1?l.d+"/"+l.m:l.d}</span>`;
-    b.title=ev.length?ev.map(e=>e.name+(e.time?" ("+e.time+")":"")).join("\n"):`Âm lịch: ${l.d}/${l.m}`;
+    b.title=[...hol,...ev.map(e=>e.name+(e.time?" ("+e.time+")":""))].join("\n")||`Âm lịch: ${l.d}/${l.m}`;
     b.onclick=()=>{sel=d;if(d.getMonth()!==vm){vm=d.getMonth();vy=d.getFullYear()}renderCal();renderDetail();renderMonth()};
     g.append(b)}}
-function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel);
-  $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>`+
+function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel),hol=holiday(sel,l);
+  $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>${hol.length?` · <span class="holt">${hol.join(", ")}</span>`:""}`+
    (ev.length?ev.map(e=>`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
 /* Danh sách sự kiện của tháng đang xem */
 function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
@@ -91,6 +123,8 @@ function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
   const L=[...mp.values()].sort((a,b)=>a.f-b.f),box=$("#mList");
   box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)} · ${repTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small></span></button>`).join(""):`<div class="empty">Tháng này chưa có sự kiện.</div>`;
+  const hl=[];for(let i=1;i<=n;i++){const d=new Date(vy,vm,i),h=holiday(d,toLunar(i,vm+1,vy));if(h.length)hl.push(`<div><b>${i}/${vm+1}</b> · ${h.join(", ")}</div>`)}
+  if(hl.length)box.insertAdjacentHTML("beforeend",`<div class="hols">${hl.join("")}</div>`);
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sel=new Date(vy,vm,+b.dataset.d);renderCal();renderDetail()})}
 mS.onchange=()=>{vm=+mS.value;renderCal();renderMonth()};yS.onchange=()=>{vy=+yS.value;renderCal();renderMonth()};
 $("#prev").onclick=()=>{vm--;if(vm<0){vm=11;vy--}renderCal();renderMonth()};
@@ -114,13 +148,14 @@ function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length
 $("#perm").onclick=async()=>{if(!("Notification"in window))return alert("Trình duyệt chưa hỗ trợ thông báo.");await Notification.requestPermission();renderNotes()};
 
 /* ===== Mật khẩu (nhập một lần, mở khoá 5 phút trong bộ nhớ trang) ===== */
-const pw=$("#pw"),ed=$("#ed"),pl=$("#pl");let editing=null,unlockUntil=0,afterAuth=null;
+const pw=$("#pw"),ed=$("#ed"),pl=$("#pl");let editing=null,unlockUntil=0,afterAuth=null,pwd="";
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
 function auth(cb){if(Date.now()<unlockUntil)return cb();afterAuth=cb;$("#pwI").value="";$("#pwE").textContent="";pw.showModal();$("#pwI").focus()}
 pw.addEventListener("close",()=>{afterAuth=null});
-$("#pwF").onsubmit=ev=>{ev.preventDefault();
-  if($("#pwI").value===PASS){unlockUntil=Date.now()+3e5;const f=afterAuth;afterAuth=null;pw.close();if(f)f()}
-  else $("#pwE").textContent="Mật khẩu không đúng."};
+$("#pwF").onsubmit=async ev=>{ev.preventDefault();const v=$("#pwI").value;
+  try{if(mode==="server")await api({op:"check"},v);else if(v!==PASS)throw new Error("Mật khẩu không đúng.");
+    pwd=v;unlockUntil=Date.now()+3e5;const f=afterAuth;afterAuth=null;pw.close();if(f)f()}
+  catch(e){$("#pwE").textContent=e.message||"Mật khẩu không đúng."}};
 $("#addBtn").onclick=()=>auth(()=>{resetForm();renderList();ed.showModal()});
 
 /* ===== Quản lý sự kiện ===== */
@@ -145,9 +180,9 @@ function renderList(){const L=$("#list");
   L.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const e=events.find(x=>x.id===b.dataset.e);editing=e.id;
     $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",e.repeat?"y":"o");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
     $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()});
-  L.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("Xoá sự kiện này?")){events=events.filter(x=>x.id!==b.dataset.d);save();renderAll();renderList();resetForm()}})}
-$("#evF").onsubmit=ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
-  events=editing?events.map(x=>x.id===editing?o:x):[...events,o];save();resetForm();renderAll();renderList()};
+  L.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll();renderList();resetForm()}catch(e){alert(e.message)}}})}
+$("#evF").onsubmit=async ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
+  try{await mutate("events","upsert",o);resetForm();renderAll();renderList()}catch(e){alert(e.message)}};
 
 /* ===== Thời tiết (Open-Meteo) – mô tả bằng chữ ===== */
 const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông"];
@@ -165,44 +200,58 @@ async function weather(lat,lon){try{
   $("#wxW").innerHTML=j.daily.time.map((d,i)=>{const dt=new Date(d+"T00:00");
     return`<div class="${i?"":"now"}"><small>${i?["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()]:"Hôm nay"}</small><b>${CN[cat(j.daily.weather_code[i])]}</b><span>${Math.round(j.daily.temperature_2m_max[i])}°/${Math.round(j.daily.temperature_2m_min[i])}°</span><small>Mưa ${j.daily.precipitation_probability_max[i]??0}%</small></div>`}).join("")
  }catch{$("#wxD").textContent="Không tải được thời tiết";$("#wxH").textContent="Cần kết nối mạng."}}
-/* Tên nơi người xem đang đứng (đổi toạ độ → địa danh) */
-async function placeName(lat,lon){
+/* Tên nơi người xem đang đứng (đổi toạ độ → địa danh chi tiết) */
+async function placeName(lat,lon,acc){
   const get=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
+  try{const a=(await get(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=vi&lat=${lat}&lon=${lon}`)).address||{};
+    const n=[...new Set([acc<=100?a.road:null,a.quarter||a.suburb||a.village||a.hamlet||a.neighbourhood||a.town,a.city_district||a.county||a.city||a.municipality,a.state||a.region].filter(Boolean))].join(", ");if(n)return n}catch{}
   try{const j=await get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=vi`);
-    const n=[...new Set([j.locality,j.city,j.principalSubdivision].filter(Boolean))].slice(0,3).join(", ");if(n)return n}catch{}
-  try{const a=(await get(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=vi&lat=${lat}&lon=${lon}`)).address||{};
-    const n=[...new Set([a.village||a.suburb||a.town||a.quarter,a.county||a.city_district,a.city||a.state].filter(Boolean))].join(", ");if(n)return n}catch{}
+    const n=[...new Set([j.locality,j.city,j.principalSubdivision].filter(Boolean))].join(", ");if(n)return n}catch{}
   return null}
 const setLoc=s=>{$("#wxL").textContent=s};
-function initWx(){const fb=msg=>{setLoc(msg+" – đang dùng Lâm Đồng (mặc định)");weather(11.94,108.44)};
+let watchId=null;
+/* Định vị chính xác: GPS độ chính xác cao, chờ tối đa ~12 giây để lấy kết quả tốt nhất */
+function initWx(){
+  const fb=msg=>{setLoc(msg+" – đang dùng Lâm Đồng (mặc định)");weather(11.94,108.44)};
   if(!navigator.geolocation)return fb("Thiết bị không hỗ trợ định vị");
-  setLoc("Đang xác định vị trí của bạn…");
-  navigator.geolocation.getCurrentPosition(async p=>{const{latitude:la,longitude:lo}=p.coords;
-    setLoc("Vị trí của bạn: đang tìm tên địa điểm…");weather(la,lo);
-    const n=await placeName(la,lo);setLoc("Vị trí của bạn: "+(n||`${la.toFixed(3)}, ${lo.toFixed(3)}`))},
-   e=>fb(e&&e.code===1?"Chưa cho phép vị trí":"Không lấy được vị trí"),{timeout:10000,maximumAge:6e5})}
+  if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+  setLoc("Đang xác định vị trí chính xác…");
+  let best=null,first=null,done=false,timer;
+  const finish=async()=>{if(done||!best)return;done=true;clearTimeout(timer);navigator.geolocation.clearWatch(watchId);watchId=null;
+    const{latitude:la,longitude:lo,accuracy:ac}=best.coords;
+    if(first&&Math.abs(first.latitude-la)+Math.abs(first.longitude-lo)>.02)weather(la,lo);
+    const n=await placeName(la,lo,ac),km=ac>=1000?(ac/1000).toFixed(1)+" km":Math.round(ac)+" m";
+    setLoc("Vị trí của bạn: "+(n||`${la.toFixed(4)}, ${lo.toFixed(4)}`)+` (sai số ~${km})`)};
+  watchId=navigator.geolocation.watchPosition(p=>{
+    if(!first){first=p.coords;weather(p.coords.latitude,p.coords.longitude);setLoc("Đang tìm tên địa điểm…")}
+    if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
+    if(p.coords.accuracy<=30)finish()},
+   e=>{if(best)finish();else if(!done){done=true;clearTimeout(timer);fb(e&&e.code===1?"Chưa cho phép vị trí":"Không lấy được vị trí")}},
+   {enableHighAccuracy:true,maximumAge:0,timeout:15000});
+  timer=setTimeout(()=>{if(best)finish()},12000)}
 $("#locBtn").onclick=initWx;
 
 /* ===== Ghi chú địa điểm (không nhắc lịch) ===== */
-const PKEY="lich-places-v1";let places=[],editingP=null;
-try{places=JSON.parse(localStorage.getItem(PKEY)||"[]")||[]}catch{}
-const psave=()=>{try{localStorage.setItem(PKEY,JSON.stringify(places))}catch{}};
+let editingP=null;const openP=new Set();
 const nrm=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d");
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
   const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi"));
   $("#pCount").textContent=q?`${L.length}/${places.length}`:places.length;
-  $("#pList").innerHTML=L.length?L.map(p=>`<article class="pc"><h3>${esc(p.name)}</h3><p>${esc(p.note)}</p><div class="acts"><button class="pill sm" data-pe="${p.id}">Sửa</button><button class="pill sm danger" data-pd="${p.id}">Xoá</button></div></article>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary>${esc(p.name)}</summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  document.querySelectorAll("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   document.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>auth(()=>openPlace(places.find(x=>x.id===b.dataset.pe))));
-  document.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>auth(()=>{if(confirm("Xoá địa điểm này?")){places=places.filter(x=>x.id!==b.dataset.pd);psave();renderPlaces()}}))}
+  document.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá địa điểm này?")){try{await mutate("places","delete",{id:b.dataset.pd});renderPlaces()}catch(e){alert(e.message)}}}))}
 function openPlace(p){editingP=p?p.id:null;$("#plTitle").textContent=p?"Sửa địa điểm":"Thêm địa điểm";$("#plN").value=p?p.name:"";$("#plC").value=p?p.note:"";pl.showModal();$("#plN").focus()}
 $("#pAdd").onclick=()=>auth(()=>openPlace(null));
 $("#pSearch").addEventListener("input",renderPlaces);
-$("#plF").onsubmit=ev=>{ev.preventDefault();const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim()};if(!o.name)return;
-  places=editingP?places.map(x=>x.id===editingP?o:x):[...places,o];psave();pl.close();$("#pSearch").value="";renderPlaces()};
+$("#plF").onsubmit=async ev=>{ev.preventDefault();const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim()};if(!o.name||!o.note)return;
+  try{await mutate("places","upsert",o);pl.close();$("#pSearch").value="";renderPlaces()}catch(e){alert(e.message)}};
 
 function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes();renderPlaces()}
 if(typeof document!=="undefined"&&!globalThis.__TEST__){
-  renderAll();initWx();resetForm();
+  renderAll();initWx();resetForm();sync();
+  setInterval(sync,30000);setInterval(()=>{$("#hello").textContent=greet()},6e4);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});addEventListener("online",sync);
   setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);
   if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }

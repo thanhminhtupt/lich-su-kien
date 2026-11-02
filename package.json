@@ -1,1 +1,14 @@
-{"name":"lich-su-kien","version":"1.0.0","private":true,"description":"Lịch âm dương nhắc sự kiện hằng năm","scripts":{"dev":"npx serve public","start":"npx serve public"},"license":"MIT"}
+{
+  "name": "lich-su-kien",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lịch sự kiện âm dương, ghi chú địa điểm",
+  "scripts": {
+    "dev": "npx serve public",
+    "start": "npx serve public"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

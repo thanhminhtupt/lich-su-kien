@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Lịch Sự Kiện – Âm Dương</title>
+<meta name="description" content="Lịch âm dương, nhắc sự kiện hằng năm theo ngày âm, kèm thời tiết.">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lịch Sự Kiện">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/icon-180.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<main>
+  <h1>LỊCH SỰ KIỆN ÂM – DƯƠNG</h1>
+
+  <section class="top">
+    <div class="card today">
+      <div class="muted" id="wd"></div>
+      <div class="big" id="solar"></div>
+      <div class="lunar" id="lunar"></div>
+    </div>
+    <div class="card">
+      <div class="wx-now"><span class="e" id="wxE">…</span><div><div class="t" id="wxT">--°</div><div class="wx-loc" id="wxL">Đang lấy thời tiết…</div></div></div>
+      <div class="week" id="wxW"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <button id="prev" aria-label="Tháng trước">‹</button>
+      <select id="mSel" aria-label="Tháng"></select>
+      <select id="ySel" aria-label="Năm"></select>
+      <button id="next" aria-label="Tháng sau">›</button>
+      <button id="goToday">Hôm nay</button>
+      <span class="sp"></span>
+      <button class="primary" id="addBtn">+ Nhập sự kiện</button>
+    </div>
+    <div class="grid" id="cal"></div>
+    <div class="detail" id="detail">Chọn một ngày để xem sự kiện.</div>
+  </section>
+
+  <section class="card">
+    <div class="bar"><h2 style="margin:0">Thông báo<span class="badge" id="nb" hidden></span></h2><span class="sp"></span><button id="perm">Bật thông báo trình duyệt</button></div>
+    <div id="notes"></div>
+  </section>
+</main>
+
+<dialog id="pw"><form id="pwF">
+  <h2>Nhập mật khẩu</h2>
+  <input type="password" id="pwI" autocomplete="off" placeholder="Mật khẩu">
+  <div class="err" id="pwE"></div>
+  <div class="acts"><button type="button" data-close>Huỷ</button><button class="primary">Xác nhận</button></div>
+</form></dialog>
+
+<dialog id="ed">
+  <h2>Quản lý sự kiện</h2>
+  <div id="list" style="margin-bottom:12px;max-height:200px;overflow:auto"></div>
+  <form id="evF">
+    <label>Tên sự kiện<input id="fN" required maxlength="80"></label>
+    <div class="row">
+      <label>Tháng âm<select id="fM"></select></label>
+      <label>Từ ngày âm<input id="fA" type="number" min="1" max="30" required></label>
+      <label>Đến ngày âm<input id="fB" type="number" min="1" max="30" required></label>
+    </div>
+    <label>Giờ bắt đầu (tuỳ chọn)<input id="fT" type="time"></label>
+    <label>Ghi chú<textarea id="fC" rows="3" maxlength="500"></textarea></label>
+    <div class="acts"><button type="button" data-close>Đóng</button><button type="button" id="fReset">Mới</button><button class="primary" id="fSave">Lưu sự kiện</button></div>
+  </form>
+</dialog>
+
+<script src="/js/app.js" defer></script>
+</body>
+</html>

@@ -22,7 +22,7 @@ Sự kiện hằng năm và địa điểm luôn được giữ. Sự kiện m�
 Chưa cấu hình thì app chạy chế độ cục bộ: dữ liệu lưu trên từng thiết bị và dùng mật khẩu `PASS` đầu file `public/js/app.js`.
 
 ## Thời tiết
-Mặc định lấy từ Open-Meteo (miễn phí, không cần khoá). Nếu không tải được, trang tự thử **Google Weather** qua `api/weather.js`, rồi đến dữ liệu lần gần nhất đã lưu trên máy (hiện kèm giờ cập nhật).
+Nếu đã cấu hình khoá Google, trang dùng **Google Weather** (qua `api/weather.js`) trước, gần với thời tiết bạn thấy trên Google nhất. Chưa có khoá thì dùng **Open-Meteo** (miễn phí). Cả hai lỗi thì hiện dữ liệu lần gần nhất đã lưu trên máy (kèm giờ cập nhật).
 Để bật Google Weather: tạo khoá API trong Google Cloud (bật **Weather API**), thêm biến môi trường `GOOGLE_WEATHER_API_KEY` trên Vercel rồi Redeploy. Kiểm tra giá và hạn mức hiện hành của Google trước khi dùng lâu dài.
 
 ## Phông chữ SVN-Avo

@@ -247,35 +247,40 @@ document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
 /* ===== Thời tiết (Open-Meteo) – mô tả bằng chữ ===== */
-const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông"];
+const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông","Có thể mưa"];
 const cat=c=>c<=1?0:c===2?1:c===3?2:c<=48?3:c<=67?4:c<=77?5:c<=82?4:c<=94?5:6;
-function part(j,a,b){const cs=j.hourly.weather_code.slice(a,b),ps=j.hourly.precipitation_probability.slice(a,b),n=Array(7).fill(0);
-  cs.forEach(c=>n[cat(c)]++);let k=n.indexOf(Math.max(...n));const pm=Math.max(0,...ps.map(x=>x||0));
-  if(pm>=60&&k<4&&cs.some(c=>cat(c)>=4))k=cs.some(c=>cat(c)===6)?6:4;return[k,pm]}
+/* Mô tả một khoảng giờ: lấy tình trạng chiếm nhiều giờ nhất; chỉ ghi "Mưa/Dông" khi mưa kéo dài và xác suất cao, còn lại ghi "Có thể mưa".
+   Trả về [mô tả, xác suất mưa cao nhất, xác suất mưa trung bình] */
+function part(j,a,b){const cs=j.hourly.weather_code.slice(a,b),ps=j.hourly.precipitation_probability.slice(a,b).map(x=>x||0),n=Array(7).fill(0);
+  cs.forEach(c=>n[cat(c)]++);const pm=Math.max(0,...ps),rain=n[4]+n[5]+n[6],need=Math.max(2,Math.ceil(cs.length/3));
+  let k=[0,1,2,3].reduce((m,i)=>n[i]>n[m]?i:m,0);if(!(n[0]+n[1]+n[2]+n[3]))k=1;
+  if(rain>=need&&pm>=50)k=n[6]?6:n[5]>n[4]?5:4;else if(pm>=40||(rain>0&&pm>=30))k=7;
+  return[k,pm,ps.length?Math.round(ps.reduce((s,x)=>s+x,0)/ps.length):0]}
 const WKEY="lich-wx-v1";
 const tmo=(u,ms=10000)=>{const c=new AbortController(),id=setTimeout(()=>c.abort(),ms);return fetch(u,{signal:c.signal}).finally(()=>clearTimeout(id))};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-/* Nguồn 1: Open-Meteo (miễn phí, không cần khoá) */
+/* Nguồn: Open-Meteo (miễn phí, không cần khoá). Tình trạng cả ngày tính từ các giờ ban ngày (6–22h), không dùng mã "xấu nhất ngày" */
 async function wxOpenMeteo(lat,lon){
-  const r=await tmo(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`);
+  const r=await tmo(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`);
   if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();
-  return{t:Math.round(j.current.temperature_2m),c:cat(j.current.weather_code),day:j.current.is_day,hi:Math.round(j.daily.temperature_2m_max[0]),lo:Math.round(j.daily.temperature_2m_min[0]),
+  return{t:Math.round(j.current.temperature_2m),fl:j.current.apparent_temperature==null?null:Math.round(j.current.apparent_temperature),c:cat(j.current.weather_code),day:j.current.is_day,hi:Math.round(j.daily.temperature_2m_max[0]),lo:Math.round(j.daily.temperature_2m_min[0]),
     parts:[["Sáng",6,12],["Chiều",12,18],["Tối",18,24]].map(([n,a,b])=>{const[k,p]=part(j,a,b);return[n,k,p]}),
-    days:j.daily.time.map((d,i)=>({d,c:cat(j.daily.weather_code[i]),hi:Math.round(j.daily.temperature_2m_max[i]),lo:Math.round(j.daily.temperature_2m_min[i]),p:j.daily.precipitation_probability_max[i]??0}))}}
-/* Nguồn 2: Google Weather (qua /api/weather, cần khoá Google ở máy chủ) */
+    days:j.daily.time.map((d,i)=>{const[k,,m]=part(j,i*24+6,i*24+22);return{d,c:k,hi:Math.round(j.daily.temperature_2m_max[i]),lo:Math.round(j.daily.temperature_2m_min[i]),p:m}})}}
+/* Nguồn: Google Weather (qua /api/weather, cần khoá Google ở máy chủ) */
 async function wxGoogle(lat,lon){
-  const r=await tmo(`/api/weather?lat=${(+lat).toFixed(3)}&lon=${(+lon).toFixed(3)}`);
-  if(r.status===503)throw new Error("chưa cấu hình khoá Google");if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+  const r=await tmo(`/api/weather?lat=${(+lat).toFixed(3)}&lon=${(+lon).toFixed(3)}`,8000);
+  if(r.status===503){try{localStorage.setItem("lich-g-off",Date.now()+216e5)}catch{}throw new Error("chưa cấu hình khoá Google")}
+  if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
 function renderWx(W,note){
   $("#wxT").textContent=W.t+"°C";$("#wxD").textContent=W.c===0&&!W.day?"Trời quang":CN[W.c];
-  $("#wxH").innerHTML=`Cao nhất ${W.hi}°<br>Thấp nhất ${W.lo}°`+(note?`<br>${esc(note)}`:"");
+  $("#wxH").innerHTML=`Cao nhất ${W.hi}° · Thấp nhất ${W.lo}°`+(W.fl!=null?`<br>Cảm giác như ${W.fl}°`:"")+(note?`<br>${esc(note)}`:"");
   $("#wxP").innerHTML=W.parts.map(([n,k,p])=>`<div><small>${n}</small><b>${k==null?"—":CN[k]}</b><small>${k==null?"":"Mưa "+p+"%"}</small></div>`).join("");
   $("#wxW").innerHTML=W.days.map((x,i)=>{const dt=new Date(x.d+"T00:00");
     return`<div class="${i?"":"now"}"><small>${i?["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()]:"Hôm nay"}</small><b>${CN[x.c]}</b><span>${x.hi}°/${x.lo}°</span><small>Mưa ${x.p}%</small></div>`}).join("")}
 async function weather(lat,lon){const errs=[];let W=null,src="";
+  if(+localStorage.getItem("lich-g-off")<Date.now()){try{W=await wxGoogle(lat,lon);src="Google Weather"}catch(e){errs.push("Google: "+(e.name==="AbortError"?"quá thời gian":e.message||"lỗi"))}}
   for(let i=0;i<2&&!W;i++){try{W=await wxOpenMeteo(lat,lon);src="Open-Meteo"}catch(e){if(!i)await wait(1200);else errs.push("Open-Meteo: "+(e.name==="AbortError"?"quá thời gian":e.message||"lỗi"))}}
-  if(!W){try{W=await wxGoogle(lat,lon);src="Google"}catch(e){errs.push("Google: "+(e.name==="AbortError"?"quá thời gian":e.message||"lỗi"))}}
-  if(W){try{localStorage.setItem(WKEY,JSON.stringify({W,ts:Date.now()}))}catch{}renderWx(W,src==="Google"?"Nguồn: Google Weather":"");return}
+  if(W){try{localStorage.setItem(WKEY,JSON.stringify({W,ts:Date.now()}))}catch{}renderWx(W,"Nguồn: "+src);return}
   let c=null;try{c=JSON.parse(localStorage.getItem(WKEY)||"null")}catch{}
   if(c&&c.W&&Date.now()-c.ts<432e5){const d=new Date(c.ts);renderWx(c.W,`Dữ liệu lúc ${pad(d.getHours())}:${pad(d.getMinutes())} (chưa cập nhật được)`);return}
   $("#wxD").textContent="Không tải được thời tiết";$("#wxH").textContent="";$("#wxW").innerHTML="";$("#wxP").innerHTML=`<div class="wxerr">${esc(errs.join(" · "))}</div>`}

@@ -20,7 +20,7 @@ module.exports=async(req,res)=>{
     const d0=fd[0],day=d0.daytimeForecast||d0.fullDayForecast||{},night=d0.nighttimeForecast||d0.fullDayForecast||{};
     const part=(n,x)=>[n,x&&x.weatherCondition?cat(x.weatherCondition.type):null,pop(x)];
     res.status(200).json({
-      t:deg(cur.temperature),c:cat(cur.weatherCondition&&cur.weatherCondition.type),day:cur.isDaytime===false?0:1,
+      t:deg(cur.temperature),fl:cur.feelsLikeTemperature&&cur.feelsLikeTemperature.degrees!=null?deg(cur.feelsLikeTemperature):null,c:cat(cur.weatherCondition&&cur.weatherCondition.type),day:cur.isDaytime===false?0:1,
       hi:deg(d0.maxTemperature),lo:deg(d0.minTemperature),
       parts:[part("Sáng",day),part("Chiều",day),part("Tối",night)],
       days:fd.slice(0,7).map(f=>{const x=f.daytimeForecast||f.fullDayForecast||{},dd=f.displayDate||{};

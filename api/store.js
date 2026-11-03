@@ -1,6 +1,7 @@
 /* Máy chủ lưu dữ liệu dùng chung (Vercel Function + Upstash Redis qua REST).
    Biến môi trường: ADMIN_PASSWORD, KV_REST_API_URL, KV_REST_API_TOKEN (hoặc UPSTASH_REDIS_REST_URL/TOKEN). */
 const crypto=require("crypto");
+const {toSolar}=require("./_lunar.js");
 const KEY="lich:data";
 const URL_=process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN=process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -20,8 +21,15 @@ function cleanEvent(e){if(!e||typeof e!=="object")return null;
 function cleanPlace(p){if(!p||typeof p!=="object")return null;
   const id=str(p.id,40),name=str(p.name,80),note=str(p.note,1000);
   return /^[\w-]+$/.test(id)&&name&&note?{id,name,note}:null}
+/* Sự kiện "một lần" đã kết thúc quá 30 ngày thì tự xoá. Sự kiện hằng năm và địa điểm không bao giờ bị xoá. */
+function expired(e){if(!e||e.repeat)return false;
+  try{const end=e.cal==="s"?new Date(Date.UTC(e.year,e.m-1,e.b)):(d=>new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())))(toSolar(e.b,e.m,e.year));
+    return Date.now()-end.getTime()>30*864e5}catch{return false}}
 async function load(){const raw=await redis(["GET",KEY]);
-  try{const d=JSON.parse(raw);return{events:d.events||[],places:d.places||[],v:d.v||0}}catch{return{events:[],places:[],v:0}}}
+  let d;try{d=JSON.parse(raw);d={events:d.events||[],places:d.places||[],v:d.v||0}}catch{return{events:[],places:[],v:0}}
+  const keep=d.events.filter(e=>!expired(e));
+  if(keep.length!==d.events.length){d.events=keep;await store(d)}
+  return d}
 async function store(d){d.v=Date.now();await redis(["SET",KEY,JSON.stringify(d)]);return d}
 module.exports=async(req,res)=>{
   res.setHeader("Cache-Control","no-store");

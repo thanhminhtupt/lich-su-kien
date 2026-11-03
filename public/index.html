@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="light dark">
 <title>Lịch Sự Kiện</title>
 <meta name="description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm hoặc một lần, kèm dự báo thời tiết.">
-<meta name="theme-color" content="#eef3ff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0b0e" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lịch Sự Kiện">
@@ -38,7 +38,7 @@
       </div>
       <div class="hl" id="wxH"></div>
     </div>
-    <div class="locrow"><div class="loc" id="wxL">Đang xác định vị trí…</div><button class="pill sm" id="locBtn">Cập nhật vị trí</button></div>
+    <div class="locrow"><div class="loc" id="wxL">Đang xác định vị trí…</div><span class="btns"><button class="pill sm" id="locBtn">Cập nhật vị trí</button><button class="pill sm" id="cleanBtn">Xoá dữ liệu cũ</button></span></div>
     <div class="parts" id="wxP"></div>
     <div class="week" id="wxW"></div>
   </section>
@@ -87,6 +87,7 @@
 
 <dialog id="ed"><div class="sheet">
   <h2>Quản lý sự kiện</h2>
+  <div class="note">Sự kiện hằng năm và địa điểm luôn được giữ lại. Sự kiện một lần chỉ tự xoá sau khi đã kết thúc 30 ngày.</div>
   <div id="list" class="elist"></div>
   <form id="evF">
     <h3 id="fTitle">Thêm sự kiện mới</h3>

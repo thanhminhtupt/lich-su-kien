@@ -11,6 +11,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lịch Sự Kiện">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Lịch Sự Kiện – by Đức Anh Hoàng">
+<meta property="og:description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm, ghi chú địa điểm và thời tiết.">
+<meta property="og:image" content="https://lich-su-kien.vercel.app/assets/icon-512.png">
+<meta property="og:url" content="https://lich-su-kien.vercel.app/">
+<meta name="twitter:card" content="summary">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
@@ -18,11 +24,16 @@
 </head>
 <body>
 <header class="hdr">
-  <div class="brand"><h1>LỊCH SỰ KIỆN</h1><button class="pill red" id="addBtn">+ Thêm sự kiện</button></div>
+  <div class="brand">
+    <div class="ttl"><h1>LỊCH SỰ KIỆN</h1><span class="tp">thanhminhtupt</span></div>
+    <button class="pill red" id="addBtn">+ Thêm sự kiện</button>
+    <div class="stor" id="stor" aria-live="polite"></div>
+  </div>
   <a class="by" href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a>
 </header>
+<noscript><div class="card">Trang cần bật JavaScript để hoạt động.</div></noscript>
 
-<main class="layout">
+<main class="layout" id="mainView">
   <section class="card today" aria-label="Hôm nay">
     <div class="hello" id="hello"></div>
     <div class="wd" id="wd"></div>
@@ -38,14 +49,16 @@
       </div>
       <div class="hl" id="wxH"></div>
     </div>
-    <div class="locrow"><div class="loc" id="wxL">Đang xác định vị trí…</div><span class="btns"><button class="pill sm" id="locBtn">Cập nhật vị trí</button><button class="pill sm" id="cleanBtn">Xoá dữ liệu cũ</button></span></div>
+    <div class="locrow"><div class="loc" id="wxL">Đang xác định vị trí…</div><span class="btns"><button class="pill sm" id="locBtn">Cập nhật vị trí</button><button class="pill sm junk" id="cleanBtn">Xoá dữ liệu rác cũ</button></span></div>
     <div class="parts" id="wxP"></div>
     <div class="week" id="wxW"></div>
   </section>
 
-  <section class="card remind" aria-label="Nhắc lịch">
-    <div class="sec-h"><h2>Nhắc lịch<span class="badge" id="nb" hidden></span></h2><button class="pill" id="perm">Bật thông báo</button></div>
+  <section class="card remind" aria-label="Sắp tới">
+    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
+    <div class="btns tools"><button class="pill notif" id="perm">Thông báo</button><a class="abtn" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
     <div id="notes"></div>
+    <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
   </section>
 
   <section class="card cal" aria-label="Lịch tháng">
@@ -74,7 +87,27 @@
     <input type="search" id="pSearch" class="search" placeholder="Tìm địa điểm hoặc ghi chú…" aria-label="Tìm địa điểm" autocomplete="off">
     <div class="plist" id="pList"></div>
   </section>
+
+  <section class="card share" aria-label="Chia sẻ ứng dụng">
+    <img class="qr" src="/assets/qr.svg" width="132" height="132" alt="Mã QR mở ứng dụng Lịch Sự Kiện">
+    <div class="sh">
+      <h2>Chia sẻ ứng dụng</h2>
+      <p class="note">Quét mã QR hoặc gửi liên kết cho người khác.</p>
+      <div class="lk">https://lich-su-kien.vercel.app/</div>
+      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="abtn" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
+    </div>
+  </section>
 </main>
+
+<section class="layout page" id="allPage" aria-label="Tất cả các sự kiện" hidden>
+  <div class="card" style="grid-column:1/-1">
+    <div class="sec-h"><button class="pill" id="backBtn">‹ Quay lại</button><div class="btns"><button class="pill primary" id="addBtn2">+ Thêm sự kiện</button><button class="pill" id="bkBtn">Sao lưu (tải về)</button></div></div>
+    <h2 class="ptitle">Tất cả các sự kiện<span class="badge ok" id="aCount"></span></h2>
+    <div class="note">Sự kiện hằng năm, sự kiện 2 năm một lần và địa điểm luôn được giữ lại. Sự kiện một lần chỉ tự xoá sau khi đã kết thúc 30 ngày.</div>
+    <input type="search" id="aSearch" class="search" placeholder="Tìm sự kiện…" aria-label="Tìm sự kiện" autocomplete="off">
+    <div id="aList"></div>
+  </div>
+</section>
 
 <footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a><div id="sync"></div></footer>
 
@@ -86,11 +119,8 @@
 </form></dialog>
 
 <dialog id="ed"><div class="sheet">
-  <h2>Quản lý sự kiện</h2>
-  <div class="note">Sự kiện hằng năm và địa điểm luôn được giữ lại. Sự kiện một lần chỉ tự xoá sau khi đã kết thúc 30 ngày.</div>
-  <div id="list" class="elist"></div>
   <form id="evF">
-    <h3 id="fTitle">Thêm sự kiện mới</h3>
+    <h2 id="fTitle">Thêm sự kiện mới</h2>
     <label>Tên sự kiện<input id="fN" required maxlength="80"></label>
 
     <div class="two">
@@ -98,8 +128,9 @@
         <label><input type="radio" name="cal" value="l" checked><span>Âm lịch</span></label>
         <label><input type="radio" name="cal" value="s"><span>Dương lịch</span></label>
       </fieldset>
-      <fieldset class="seg"><legend>Lặp lại</legend>
+      <fieldset class="seg wide"><legend>Lặp lại</legend>
         <label><input type="radio" name="rep" value="y" checked><span>Hằng năm</span></label>
+        <label><input type="radio" name="rep" value="t"><span>2 năm / lần</span></label>
         <label><input type="radio" name="rep" value="o"><span>Một lần</span></label>
       </fieldset>
     </div>

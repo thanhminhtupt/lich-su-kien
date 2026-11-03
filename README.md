@@ -2,6 +2,13 @@
 
 Web app quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trước 7 ngày và 3 ngày, ghi chú địa điểm, ngày lễ, thời tiết theo vị trí. Giao diện phẳng, hỗ trợ iPhone, iPad, PC và cài như ứng dụng (PWA).
 
+## Tính năng chính
+- Mục **Sắp tới** hiện 10 sự kiện gần nhất; nút cam **Tất cả các sự kiện** mở trang quản lý (tìm kiếm, sửa, xoá, sao lưu).
+- Lặp lại: **hằng năm**, **2 năm / lần**, **một lần**; ngày âm hoặc dương.
+- Nút thông báo hiện rõ BẬT (xanh) / TẮT (xám); nút **Đóng góp sự kiện** chuyển sang Zalo.
+- Dòng **Lưu trữ %** cạnh nút Thêm sự kiện, kèm cảnh báo khi Vercel/Upstash báo lỗi hoặc gần hết hạn mức.
+- Mã QR chia sẻ: `public/assets/qr.svg` (tạo cho địa chỉ https://lich-su-kien.vercel.app/; đổi tên miền thì cần tạo lại mã QR).
+
 ## Dữ liệu dùng chung (khuyến nghị)
 Thêm/sửa/xoá sự kiện và địa điểm được lưu trên máy chủ (Vercel Function `api/store.js` + Upstash Redis), mọi người mở trang đều thấy dữ liệu mới nhất (tự đồng bộ mỗi 60 giây khi đang mở trang và khi mở lại trang). Mật khẩu được kiểm tra **trên máy chủ**.
 

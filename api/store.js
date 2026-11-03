@@ -8,7 +8,8 @@ const TOKEN=process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN;
 const PASS=process.env.ADMIN_PASSWORD;
 const redis=async cmd=>{
   const r=await fetch(URL_,{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},body:JSON.stringify(cmd)});
-  if(!r.ok)throw new Error("redis "+r.status);return (await r.json()).result};
+  if(!r.ok){let m="";try{m=await r.text()}catch{}const e=new Error("redis "+r.status+" "+m);e.status=r.status;throw e}
+  return (await r.json()).result};
 const sha=s=>crypto.createHash("sha256").update(String(s??"")).digest();
 const okPass=p=>crypto.timingSafeEqual(sha(p),sha(PASS));
 const str=(s,n)=>String(s??"").trim().slice(0,n);
@@ -16,8 +17,8 @@ const int=(v,a,b)=>{v=Math.trunc(+v);return v>=a&&v<=b?v:null};
 function cleanEvent(e){if(!e||typeof e!=="object")return null;
   const id=str(e.id,40),name=str(e.name,80),cal=e.cal==="s"?"s":e.cal==="l"?"l":null,m=int(e.m,1,12);
   let a=int(e.a,1,31),b=int(e.b,1,31);if(!/^[\w-]+$/.test(id)||!name||!cal||!m||!a||!b)return null;if(b<a)[a,b]=[b,a];
-  const repeat=!!e.repeat,year=repeat?null:int(e.year,1900,2200);if(!repeat&&!year)return null;
-  return{id,name,cal,m,a,b,repeat,year,time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
+  const repeat=!!e.repeat,every=repeat&&+e.every===2?2:1,year=repeat&&every===1?null:int(e.year,1900,2200);if(!repeat&&!year)return null;if(every===2&&!year)return null;
+  return{id,name,cal,m,a,b,repeat,every,year,time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
 function cleanPlace(p){if(!p||typeof p!=="object")return null;
   const id=str(p.id,40),name=str(p.name,80),note=str(p.note,1000);
   return /^[\w-]+$/.test(id)&&name&&note?{id,name,note}:null}
@@ -25,6 +26,9 @@ function cleanPlace(p){if(!p||typeof p!=="object")return null;
 function expired(e){if(!e||e.repeat)return false;
   try{const end=e.cal==="s"?new Date(Date.UTC(e.year,e.m-1,e.b)):(d=>new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())))(toSolar(e.b,e.m,e.year));
     return Date.now()-end.getTime()>30*864e5}catch{return false}}
+const FAIL="lich:fail";
+async function locked(){return (+(await redis(["GET",FAIL]))||0)>=10}
+async function bump(){const n=await redis(["INCR",FAIL]);if(n===1)await redis(["EXPIRE",FAIL,600])}
 async function load(){const raw=await redis(["GET",KEY]);
   let d;try{d=JSON.parse(raw);d={events:d.events||[],places:d.places||[],v:d.v||0}}catch{return{events:[],places:[],v:0}}
   const keep=d.events.filter(e=>!expired(e));
@@ -35,10 +39,11 @@ module.exports=async(req,res)=>{
   res.setHeader("Cache-Control","no-store");
   if(!URL_||!TOKEN||!PASS)return res.status(503).json({error:"Chưa cấu hình máy chủ lưu trữ."});
   try{
-    if(req.method==="GET")return res.status(200).json(await load());
+    if(req.method==="GET"){const d=await load();return res.status(200).json({...d,size:Buffer.byteLength(JSON.stringify({events:d.events,places:d.places,v:d.v}))})}
     if(req.method!=="POST")return res.status(405).json({error:"Phương thức không được hỗ trợ."});
     let b=req.body;if(typeof b==="string"){try{b=JSON.parse(b)}catch{b=null}}b=b||{};
-    if(!okPass(b.password)){await new Promise(r=>setTimeout(r,500));return res.status(401).json({error:"Mật khẩu không đúng."})}
+    if(await locked())return res.status(429).json({error:"Nhập sai mật khẩu quá nhiều lần. Hãy thử lại sau 10 phút."});
+    if(!okPass(b.password)){await bump();await new Promise(r=>setTimeout(r,500));return res.status(401).json({error:"Mật khẩu không đúng."})}
     if(b.op==="check")return res.status(200).json({ok:true});
     const d=await load();
     if(b.op==="import"){
@@ -54,5 +59,9 @@ module.exports=async(req,res)=>{
       if(i>=0)d[k][i]=it;else{if(d[k].length>=500)return res.status(400).json({error:"Đã đạt giới hạn 500 mục."});d[k].push(it)}}
     else return res.status(400).json({error:"Yêu cầu không hợp lệ."});
     return res.status(200).json(await store(d));
-  }catch{return res.status(500).json({error:"Lỗi máy chủ lưu trữ."})}
+  }catch(e){
+    const m=String(e&&e.message||"");
+    if(e&&(e.status===401||e.status===403))return res.status(502).json({error:"Khoá kết nối Upstash không hợp lệ hoặc đã hết hạn. Hãy kiểm tra biến môi trường trên Vercel."});
+    if(/limit|quota|exceed/i.test(m))return res.status(429).json({error:"Upstash đã chạm hạn mức gói miễn phí (số lệnh hoặc dung lượng). Hãy kiểm tra gói trên Upstash/Vercel."});
+    return res.status(500).json({error:"Lỗi máy chủ lưu trữ (Upstash/Vercel)."})}
 };

@@ -52,13 +52,24 @@ const hhmm=()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes
 async function api(body,p=pwd){let r;
   try{r=await fetch("/api/store",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,password:p})})}catch{throw new Error("Không kết nối được máy chủ.")}
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Lỗi máy chủ ("+r.status+").");return j}
+let srvSize=0,warn="";
 async function sync(){
   try{const r=await fetch("/api/store",{cache:"no-store"});
-    if(r.status===404||r.status===503){mode="local";try{localStorage.setItem("lich-mode",mode)}catch{}if(pruneLocal())renderAll();setSync("Dữ liệu lưu trên máy này (chưa kết nối máy chủ).");return}
-    if(!r.ok)throw 0;const d=await r.json();mode="server";try{localStorage.setItem("lich-mode",mode)}catch{}
+    if(r.status===404||r.status===503){mode="local";try{localStorage.setItem("lich-mode",mode)}catch{}warn="";if(pruneLocal())renderAll();setSync("Dữ liệu lưu trên máy này (chưa kết nối máy chủ).");renderStatus();return}
+    if(!r.ok){let m="";try{m=(await r.json()).error||""}catch{}
+      warn=m||(r.status===402?"Vercel báo dự án bị tạm dừng hoặc hết hạn mức gói miễn phí (mã 402).":r.status===429?"Vercel báo vượt giới hạn truy cập (mã 429), hãy thử lại sau.":"Máy chủ Vercel đang báo lỗi (mã "+r.status+").");
+      setSync("Chưa đồng bộ được với máy chủ.");renderStatus();return}
+    const d=await r.json();mode="server";try{localStorage.setItem("lich-mode",mode)}catch{}srvSize=d.size||0;warn="";
     if(d.v&&d.v!==serverV){applyServer(d);renderAll()}
-    setSync("Dữ liệu dùng chung · cập nhật lúc "+hhmm())}
+    setSync("Dữ liệu dùng chung · cập nhật lúc "+hhmm());renderStatus()}
   catch{setSync("Đang ngoại tuyến · hiển thị dữ liệu đã lưu trên máy.")}}
+/* Dung lượng lưu trữ: máy chủ (Upstash Free 250 MB) hoặc bộ nhớ trình duyệt (~5 MB) */
+const fmtB=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(n<1e7?2:0)+" MB";
+function localBytes(){let n=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);n+=(k.length+(localStorage.getItem(k)||"").length)*2}}catch{}return n}
+function renderStatus(){const srv=mode==="server",used=srv?srvSize:localBytes(),lim=(srv?250:5)*1048576,pct=used/lim*100;
+  const ps=pct<.01?"<0,01":pct.toLocaleString("vi-VN",{maximumFractionDigits:2});
+  let w=warn;if(!w&&pct>=80)w=srv?"Sắp hết dung lượng lưu trữ miễn phí (Upstash/Vercel).":"Bộ nhớ trình duyệt sắp đầy.";
+  $("#stor").innerHTML=`${srv?"Lưu trữ":"Lưu trữ trên máy"}: ${ps}% (${fmtB(used)} / ${fmtB(lim)})`+(w?`<span class="warn">${esc(w)}</span>`:"")}
 /* Chế độ cục bộ: sự kiện một lần kết thúc quá 30 ngày thì tự xoá (máy chủ cũng làm vậy). Hằng năm và địa điểm luôn được giữ. */
 function pruneLocal(){const n=events.length;
   events=events.filter(e=>{if(e.repeat)return true;try{return diffD(T0,occ(e,e.year).en)<=30}catch{return true}});
@@ -72,20 +83,21 @@ async function mutate(kind,op,x){
   applyServer(await api({op,kind,item:x,id:x.id}))}
 
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m;
-const repTxt=e=>e.repeat?"Hằng năm":"Một lần · năm "+e.year;
+const repTxt=e=>e.repeat?(e.every===2?"2 năm/lần · từ "+e.year:"Hằng năm"):"Một lần · năm "+e.year;
+const yearOk=(e,y)=>e.repeat?(e.every===2?(((y-e.year)%2)+2)%2===0:true):e.year===y;
 
 /* Khoảng ngày dương lịch của sự kiện trong năm y (năm âm nếu là sự kiện âm lịch) */
 function occ(e,y){
   if(e.cal==="s"){const n=new Date(y,e.m,0).getDate();return{s:new Date(y,e.m-1,Math.min(e.a,n)),en:new Date(y,e.m-1,Math.min(e.b,n))}}
   return{s:toSolar(e.a,e.m,y),en:toSolar(e.b,e.m,y)}}
 /* Lần diễn ra kế tiếp (chưa kết thúc). Sự kiện một lần đã qua → null */
-function nextOcc(e){let best=null;const Y=now.getFullYear(),ys=e.repeat?[Y-1,Y,Y+1]:[e.year];
-  for(const y of ys){const o=occ(e,y);if(day0(o.en)>=T0&&(!best||o.s<best.s))best={s:o.s,en:o.en,y}}return best}
+function nextOcc(e){let best=null;const Y=now.getFullYear(),ys=e.repeat?[Y-1,Y,Y+1,Y+(e.every===2?2:1)]:[e.year];
+  for(const y of ys){if(e.repeat&&!yearOk(e,y))continue;const o=occ(e,y);if(day0(o.en)>=T0&&(!best||o.s<best.s))best={s:o.s,en:o.en,y}}return best}
 function eventsOn(date){const d=date.getDate(),m=date.getMonth()+1,y=date.getFullYear();let l=null;
   return events.filter(e=>{
-    if(e.cal==="s")return e.m===m&&d>=e.a&&d<=e.b&&(e.repeat||e.year===y);
+    if(e.cal==="s")return e.m===m&&d>=e.a&&d<=e.b&&yearOk(e,y);
     l=l||toLunar(d,m,y);
-    return !l.leap&&e.m===l.m&&l.d>=e.a&&l.d<=e.b&&(e.repeat||e.year===l.y)})}
+    return !l.leap&&e.m===l.m&&l.d>=e.a&&l.d<=e.b&&yearOk(e,l.y)})}
 
 /* ===== Hôm nay ===== */
 const greet=()=>{const h=new Date().getHours();return"Xin chào "+(h>=5&&h<11?"buổi sáng":h>=11&&h<13?"buổi trưa":h>=13&&h<18?"buổi chiều":h>=18&&h<22?"buổi tối":"buổi đêm")};
@@ -143,14 +155,13 @@ function remList(){const out=[],up=[];
   const by=(a,b)=>a.o.s-b.o.s;return{out:out.sort(by),up:up.sort(by)}}
 function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;
   const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chip">${lbl}</span></span></button>`;
-  const upc=up.filter(n=>!out.includes(n)).slice(0,3);
-  $("#notes").innerHTML=out.length?out.map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7",(n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":"Nhắc lần 1")+" · "+repTxt(n.e))).join("")
-    :`<div class="empty">${up.length?"Không có nhắc nhở trong 7 ngày tới.":"Chưa có sự kiện nào."}</div>`+(upc.length?`<div class="sub">Sắp tới</div>`+upc.map(n=>item(n,"w7","Sắp tới · "+repTxt(n.e))).join(""):"");
-  const pm=$("#perm");pm.classList.remove("on","off");
-  if(!canN){pm.textContent="Không hỗ trợ thông báo";pm.disabled=true}
-  else if(Notification.permission==="denied"){pm.textContent="Thông báo: bị chặn";pm.classList.add("off")}
-  else if(nOn()){pm.textContent="Thông báo: BẬT";pm.classList.add("on")}
-  else{pm.textContent="Thông báo: TẮT";pm.classList.add("off")}
+  $("#notes").innerHTML=up.length?up.slice(0,10).map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7",(n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":n.dd<=7?"Nhắc lần 1":"Sắp tới")+" · "+repTxt(n.e))).join("")
+    +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`;
+  const pm=$("#perm");pm.classList.remove("on","off");pm.disabled=false;
+  if(!canN){pm.textContent="Thông báo: trình duyệt chưa hỗ trợ";pm.disabled=true;pm.classList.add("off")}
+  else if(Notification.permission==="denied"){pm.textContent="Thông báo bị chặn";pm.classList.add("off")}
+  else if(nOn()){pm.textContent="Thông báo hiện đang BẬT";pm.classList.add("on")}
+  else{pm.textContent="Thông báo hiện đang TẮT";pm.classList.add("off")}
   if(nOn()){let sent={};try{sent=JSON.parse(localStorage.getItem(SENT)||"{}")}catch{}
     out.forEach(n=>{const st=n.run?"now":n.dd<=3?"3":"7",k=n.e.id+"|"+n.o.y+"|"+st;
       if(!sent[k]){sent[k]=1;try{new Notification(n.e.name,{body:(n.run?"Đang diễn ra":"Còn "+n.dd+" ngày nữa")+(n.e.time?" · "+n.e.time:"")})}catch{}}});
@@ -158,8 +169,14 @@ function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length
 $("#perm").onclick=async()=>{if(!canN)return;
   if(Notification.permission==="denied")return alert("Thông báo đang bị chặn. Hãy bật lại trong cài đặt của trình duyệt cho trang này.");
   if(Notification.permission==="granted"){try{localStorage.setItem(MUTE,nOn()?"1":"0")}catch{}}
-  else{await Notification.requestPermission();try{localStorage.setItem(MUTE,"0")}catch{}}
+  else{try{await Notification.requestPermission()}catch{}try{localStorage.setItem(MUTE,"0")}catch{}}
   renderNotes()};
+/* Mặc định luôn bật: lần chạm đầu tiên trên trang sẽ xin quyền thông báo (trình duyệt bắt buộc phải có sự đồng ý của người dùng) */
+function autoAsk(){if(!canN||Notification.permission!=="default"||localStorage.getItem("lich-asked")==="1"||localStorage.getItem(MUTE)==="1")return;
+  try{localStorage.setItem("lich-asked","1")}catch{}
+  try{Promise.resolve(Notification.requestPermission()).then(renderNotes).catch(()=>{})}catch{}}
+["pointerdown","keydown"].forEach(ev=>addEventListener(ev,autoAsk,{once:true,passive:true}));
+$("#allBtn").onclick=()=>{location.hash="#tat-ca"};
 
 /* ===== Mật khẩu (nhập một lần, mở khoá 5 phút trong bộ nhớ trang) ===== */
 const pw=$("#pw"),ed=$("#ed"),pl=$("#pl");let editing=null,unlockUntil=0,afterAuth=null,pwd="";
@@ -170,16 +187,17 @@ $("#pwF").onsubmit=async ev=>{ev.preventDefault();const v=$("#pwI").value;
   try{if(mode==="server")await api({op:"check"},v);else if(v!==PASS)throw new Error("Mật khẩu không đúng.");
     pwd=v;unlockUntil=Date.now()+3e5;const f=afterAuth;afterAuth=null;pw.close();if(f)f()}
   catch(e){$("#pwE").textContent=e.message||"Mật khẩu không đúng."}};
-$("#addBtn").onclick=()=>auth(()=>{resetForm();renderList();ed.showModal()});
+const openAdd=()=>auth(()=>{resetForm();ed.showModal()});
+$("#addBtn").onclick=openAdd;$("#addBtn2").onclick=openAdd;
 
-/* ===== Quản lý sự kiện ===== */
+/* ===== Thêm / sửa sự kiện (form) ===== */
 const radio=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const setRadio=(n,v)=>{document.querySelector(`input[name=${n}][value=${v}]`).checked=true};
 function readForm(){let a=+$("#fA").value,b=+$("#fB").value;if(!a||!b)return null;
-  const cal=radio("cal"),rep=radio("rep")==="y",mx=cal==="s"?31:30;if(b<a)[a,b]=[b,a];a=Math.min(Math.max(a,1),mx);b=Math.min(Math.max(b,1),mx);
-  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m:+$("#fM").value,a,b,repeat:rep,year:rep?null:(+$("#fY").value||now.getFullYear()),time:$("#fT").value,note:$("#fC").value.trim()}}
-function syncForm(){const rep=radio("rep")==="y",cal=radio("cal");
-  $("#fYw").hidden=rep;$("#fYl").textContent=cal==="l"?"Năm âm lịch":"Năm dương lịch";$("#fA").max=$("#fB").max=cal==="s"?31:30;
+  const cal=radio("cal"),rp=radio("rep"),mx=cal==="s"?31:30;if(b<a)[a,b]=[b,a];a=Math.min(Math.max(a,1),mx);b=Math.min(Math.max(b,1),mx);
+  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m:+$("#fM").value,a,b,repeat:rp!=="o",every:rp==="t"?2:1,year:rp==="y"?null:(+$("#fY").value||now.getFullYear()),time:$("#fT").value,note:$("#fC").value.trim()}}
+function syncForm(){const rp=radio("rep"),cal=radio("cal"),cn=cal==="l"?"âm lịch":"dương lịch";
+  $("#fYw").hidden=rp==="y";$("#fYl").textContent=rp==="t"?`Năm diễn ra (${cn}), lặp lại mỗi 2 năm`:"Năm "+cn;$("#fA").max=$("#fB").max=cal==="s"?31:30;
   const e=readForm(),p=$("#fP");p.textContent="";if(!e)return;
   try{const o=e.repeat?nextOcc(e):occ(e,e.year);if(!o)return;
     const pre=e.repeat?"Lần tới: ":"Ngày: ";
@@ -189,15 +207,30 @@ function resetForm(){editing=null;$("#evF").reset();$("#fY").value=now.getFullYe
 $("#fReset").onclick=resetForm;
 $("#evF").addEventListener("input",syncForm);$("#evF").addEventListener("change",syncForm);
 function editEvent(id){const e=events.find(x=>x.id===id);if(!e)return;editing=e.id;
-  $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",e.repeat?"y":"o");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
+  $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",!e.repeat?"o":e.every===2?"t":"y");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
   $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()}
-function renderList(){const L=$("#list");
-  L.innerHTML=events.length?events.map(e=>{const past=!e.repeat&&!nextOcc(e);
-    return`<div class="it"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${past?`<span class="tag">Đã qua</span>`:""}<div class="acts"><button class="pill" data-e="${e.id}">Sửa</button><button class="pill danger" data-d="${e.id}">Xoá</button></div></div>`}).join(""):`<div class="empty">Chưa có sự kiện.</div>`;
-  L.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>editEvent(b.dataset.e));
-  L.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll();renderList();resetForm()}catch(e){alert(e.message)}}})}
 $("#evF").onsubmit=async ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
-  try{await mutate("events","upsert",o);resetForm();renderAll();renderList()}catch(e){alert(e.message)}};
+  try{await mutate("events","upsert",o);ed.close();resetForm();renderAll()}catch(e){alert(e.message)}};
+
+/* ===== Trang "Tất cả các sự kiện" (quản lý: xem, sửa, xoá, tìm kiếm, sao lưu) ===== */
+const nrm=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d");
+function renderAllPage(){if($("#allPage").hidden)return;const q=nrm($("#aSearch").value.trim());
+  const L=events.map(e=>({e,o:nextOcc(e)})).filter(x=>!q||nrm(x.e.name).includes(q)||nrm(x.e.note||"").includes(q))
+    .sort((a,b)=>a.o&&b.o?a.o.s-b.o.s:a.o?-1:b.o?1:0);
+  $("#aCount").textContent=q?`${L.length}/${events.length}`:events.length;
+  const box=$("#aList");
+  box.innerHTML=L.length?L.map(({e,o})=>{const dd=o?diffD(o.s,T0):0,chip=!o?"Đã qua":dd<=0?"Đang diễn ra":"Còn "+dd+" ngày";
+    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="tag">${repTxt(e)}</span><span class="chip">${chip}</span></div><div class="acts"><button class="pill sm" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div></div>`}).join("")
+    :`<div class="empty">${events.length?"Không tìm thấy sự kiện phù hợp.":"Chưa có sự kiện nào."}</div>`;
+  box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>auth(()=>{resetForm();editEvent(b.dataset.e);ed.showModal()}));
+  box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll()}catch(e){alert(e.message)}}}))}
+$("#aSearch").addEventListener("input",renderAllPage);
+$("#bkBtn").onclick=()=>{const d=new Date(),a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({xuatLuc:d.toISOString(),events,places},null,2)],{type:"application/json"}));
+  a.download=`lich-su-kien-sao-luu-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+function route(){const all=location.hash==="#tat-ca";$("#mainView").hidden=all;$("#allPage").hidden=!all;if(all)renderAllPage();window.scrollTo(0,0)}
+addEventListener("hashchange",route);
+$("#backBtn").onclick=()=>{location.hash=""};
 
 /* ===== Xem chi tiết sự kiện (ai cũng xem được; sửa/xoá cần mật khẩu) ===== */
 const vd=$("#vd");let vdId=null;
@@ -208,7 +241,7 @@ function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
   $("#vdN").textContent=e.name;
   $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
   vd.showModal()}
-$("#vdEdit").onclick=()=>auth(()=>{vd.close();resetForm();renderList();editEvent(vdId);ed.showModal()});
+$("#vdEdit").onclick=()=>auth(()=>{vd.close();resetForm();editEvent(vdId);ed.showModal()});
 $("#vdDel").onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:vdId});vd.close();renderAll()}catch(e){alert(e.message)}}});
 document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
@@ -278,14 +311,13 @@ function initWx(){
 $("#locBtn").onclick=initWx;
 /* Chỉ xoá dữ liệu thời tiết đã lưu rồi tải lại bản mới nhất. Không đụng tới sự kiện hay địa điểm. */
 $("#cleanBtn").onclick=()=>{
-  if(!confirm("Xoá dữ liệu thời tiết đã lưu và tải lại bản mới nhất?\n(Sự kiện và địa điểm không bị ảnh hưởng.)"))return;
+  if(!confirm("Xoá dữ liệu thời tiết rác cũ đã lưu và tải lại bản mới nhất?\n(Sự kiện và địa điểm không bị ảnh hưởng.)"))return;
   try{localStorage.removeItem(WKEY)}catch{}
   $("#wxD").textContent="Đang tải lại…";$("#wxH").textContent="";$("#wxP").innerHTML="";$("#wxW").innerHTML="";
   initWx()};
 
 /* ===== Ghi chú địa điểm (không nhắc lịch) ===== */
 let editingP=null;const openP=new Set();
-const nrm=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d");
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
   const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi"));
   $("#pCount").textContent=q?`${L.length}/${places.length}`:places.length;
@@ -299,9 +331,13 @@ $("#pSearch").addEventListener("input",renderPlaces);
 $("#plF").onsubmit=async ev=>{ev.preventDefault();const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim()};if(!o.name||!o.note)return;
   try{await mutate("places","upsert",o);pl.close();$("#pSearch").value="";renderPlaces()}catch(e){alert(e.message)}};
 
-function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes();renderPlaces()}
+$("#shBtn").onclick=async()=>{const u="https://lich-su-kien.vercel.app/",b=$("#shBtn");
+  try{if(navigator.share){await navigator.share({title:"Lịch Sự Kiện",text:"Lịch sự kiện âm dương, nhắc lịch và thời tiết",url:u});return}}catch{return}
+  try{await navigator.clipboard.writeText(u);b.textContent="Đã sao chép liên kết"}catch{b.textContent=u}
+  setTimeout(()=>{b.textContent="Chia sẻ liên kết"},2500)};
+function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes();renderPlaces();renderAllPage();renderStatus()}
 if(typeof document!=="undefined"&&!globalThis.__TEST__){
-  renderAll();initWx();resetForm();sync();
+  route();renderAll();initWx();resetForm();sync();
   setInterval(()=>{if(!document.hidden)sync()},60000);setInterval(()=>{$("#hello").textContent=greet()},6e4);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});addEventListener("online",sync);
   setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);

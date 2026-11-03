@@ -35,28 +35,27 @@
 
 <main class="layout" id="mainView">
   <section class="card today" aria-label="Hôm nay">
-    <div class="hello" id="hello"></div>
-    <div class="wd" id="wd"></div>
-    <div class="big" id="solar"></div>
+    <div class="t1">
+      <div class="hello" id="hello"></div>
+      <div class="wd" id="wd"></div>
+      <div class="big" id="solar"></div>
+    </div>
     <div class="lunar" id="lunar"></div>
   </section>
 
-  <section class="card wx" aria-label="Thời tiết">
-    <div class="wx-top">
-      <div>
-        <div class="t" id="wxT">--°</div>
-        <div class="d" id="wxD">Đang lấy thời tiết…</div>
-      </div>
-      <div class="hl" id="wxH"></div>
-    </div>
-    <div class="locrow"><div class="loc" id="wxL">Đang xác định vị trí…</div><span class="btns"><button class="pill sm" id="locBtn">Cập nhật vị trí</button><button class="pill sm junk" id="cleanBtn">Xoá dữ liệu rác cũ</button></span></div>
-    <div class="parts" id="wxP"></div>
-    <div class="week" id="wxW"></div>
-  </section>
+  <div class="strip">
+    <a class="wlink" href="https://www.google.com/search?q=thoi+tiet+h%C3%B4m+nay" target="_blank" rel="noopener noreferrer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3.6" fill="#f5b400"/><path d="M9 2.6v1.6M2.6 9h1.6M4.5 4.5l1.1 1.1M13.5 4.5l-1.1 1.1" stroke="#f5b400" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .4-6.97A4.6 4.6 0 0 0 9 13a3.2 3.2 0 0 0-.5 6.5Z" fill="#fff" stroke="#6b8fc7" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <span>Thời tiết hôm nay</span><span class="ext" aria-hidden="true">↗</span>
+    </a>
+    <span class="sp"></span>
+    <button class="pill yellow" id="reloadBtn">Load lại trang</button>
+    <button class="pill junk" id="cleanBtn">Xoá dữ liệu rác cũ</button>
+  </div>
 
   <section class="card remind" aria-label="Sắp tới">
     <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
-    <div class="btns tools"><button class="pill notif" id="perm">Thông báo</button><a class="abtn" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
+    <div class="btns tools"><button class="swt" id="perm" role="switch" aria-checked="false"><span class="lbl">Thông báo</span><span class="trk"><span class="knob"></span></span></button><a class="abtn purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
     <div id="notes"></div>
     <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
   </section>
@@ -89,19 +88,19 @@
   </section>
 
   <section class="card share" aria-label="Chia sẻ ứng dụng">
-    <img class="qr" src="/assets/qr.svg" width="132" height="132" alt="Mã QR mở ứng dụng Lịch Sự Kiện">
+    <img class="qr" src="/assets/qr.svg" alt="Mã QR mở ứng dụng Lịch Sự Kiện">
     <div class="sh">
       <h2>Chia sẻ ứng dụng</h2>
       <p class="note">Quét mã QR hoặc gửi liên kết cho người khác.</p>
       <div class="lk">https://lich-su-kien.vercel.app/</div>
-      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="abtn" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
+      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="abtn green" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
     </div>
   </section>
 </main>
 
 <section class="layout page" id="allPage" aria-label="Tất cả các sự kiện" hidden>
   <div class="card" style="grid-column:1/-1">
-    <div class="sec-h"><button class="pill" id="backBtn">‹ Quay lại</button><div class="btns"><button class="pill primary" id="addBtn2">+ Thêm sự kiện</button><button class="pill" id="bkBtn">Sao lưu (tải về)</button></div></div>
+    <div class="sec-h"><button class="pill" id="backBtn">‹ Quay lại</button><div class="btns"><button class="pill primary" id="addBtn2">+ Thêm sự kiện</button><button class="pill green" id="bkBtn">Sao lưu (tải về)</button></div></div>
     <h2 class="ptitle">Tất cả các sự kiện<span class="badge ok" id="aCount"></span></h2>
     <div class="note">Sự kiện hằng năm, sự kiện 2 năm một lần và địa điểm luôn được giữ lại. Sự kiện một lần chỉ tự xoá sau khi đã kết thúc 30 ngày.</div>
     <input type="search" id="aSearch" class="search" placeholder="Tìm sự kiện…" aria-label="Tìm sự kiện" autocomplete="off">

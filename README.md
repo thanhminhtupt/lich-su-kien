@@ -5,7 +5,7 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trướ
 ## Tính năng chính
 - Mục **Sắp tới** hiện 10 sự kiện gần nhất; nút cam **Tất cả các sự kiện** mở trang quản lý (tìm kiếm, sửa, xoá, sao lưu).
 - Lặp lại: **hằng năm**, **2 năm / lần**, **một lần**; ngày âm hoặc dương.
-- Nút thông báo hiện rõ BẬT (xanh) / TẮT (xám); nút **Đóng góp sự kiện** chuyển sang Zalo.
+- Công tắc thông báo BẬT (xanh) / TẮT (xám); nút **Đóng góp sự kiện** chuyển sang Zalo.
 - Dòng **Lưu trữ %** cạnh nút Thêm sự kiện, kèm cảnh báo khi Vercel/Upstash báo lỗi hoặc gần hết hạn mức.
 - Mã QR chia sẻ: `public/assets/qr.svg` (tạo cho địa chỉ https://lich-su-kien.vercel.app/; đổi tên miền thì cần tạo lại mã QR).
 
@@ -22,8 +22,7 @@ Sự kiện hằng năm và địa điểm luôn được giữ. Sự kiện m�
 Chưa cấu hình thì app chạy chế độ cục bộ: dữ liệu lưu trên từng thiết bị và dùng mật khẩu `PASS` đầu file `public/js/app.js`.
 
 ## Thời tiết
-Nếu đã cấu hình khoá Google, trang dùng **Google Weather** (qua `api/weather.js`) trước, gần với thời tiết bạn thấy trên Google nhất. Chưa có khoá thì dùng **Open-Meteo** (miễn phí). Cả hai lỗi thì hiện dữ liệu lần gần nhất đã lưu trên máy (kèm giờ cập nhật).
-Để bật Google Weather: tạo khoá API trong Google Cloud (bật **Weather API**), thêm biến môi trường `GOOGLE_WEATHER_API_KEY` trên Vercel rồi Redeploy. Kiểm tra giá và hạn mức hiện hành của Google trước khi dùng lâu dài.
+Trang không còn tải dữ liệu thời tiết. Thay vào đó có một liên kết **Thời tiết hôm nay** mở kết quả Google (tab mới), không cần API hay khoá.
 
 ## Phông chữ SVN-Avo
 Đặt file vào `public/assets/fonts/`: `SVN-Avo.woff2` (hoặc `.ttf`) và `SVN-Avo-Bold.woff2` (hoặc `.ttf`). Chưa có thì dùng phông tròn của hệ thống.

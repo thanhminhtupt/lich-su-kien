@@ -157,11 +157,12 @@ function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length
   const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chip">${lbl}</span></span></button>`;
   $("#notes").innerHTML=up.length?up.slice(0,10).map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7",(n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":n.dd<=7?"Nhắc lần 1":"Sắp tới")+" · "+repTxt(n.e))).join("")
     +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`;
-  const pm=$("#perm");pm.classList.remove("on","off");pm.disabled=false;
-  if(!canN){pm.textContent="Thông báo: trình duyệt chưa hỗ trợ";pm.disabled=true;pm.classList.add("off")}
-  else if(Notification.permission==="denied"){pm.textContent="Thông báo bị chặn";pm.classList.add("off")}
-  else if(nOn()){pm.textContent="Thông báo hiện đang BẬT";pm.classList.add("on")}
-  else{pm.textContent="Thông báo hiện đang TẮT";pm.classList.add("off")}
+  const pm=$("#perm"),lb=pm.querySelector(".lbl");pm.classList.remove("on","off");pm.disabled=false;
+  const on=nOn();pm.setAttribute("aria-checked",on?"true":"false");
+  if(!canN){lb.textContent="Thông báo: trình duyệt chưa hỗ trợ";pm.disabled=true}
+  else if(Notification.permission==="denied"){lb.textContent="Thông báo bị chặn (mở trong cài đặt)"}
+  else if(on){lb.textContent="Thông báo hiện đang BẬT";pm.classList.add("on")}
+  else lb.textContent="Thông báo hiện đang TẮT";
   if(nOn()){let sent={};try{sent=JSON.parse(localStorage.getItem(SENT)||"{}")}catch{}
     out.forEach(n=>{const st=n.run?"now":n.dd<=3?"3":"7",k=n.e.id+"|"+n.o.y+"|"+st;
       if(!sent[k]){sent[k]=1;try{new Notification(n.e.name,{body:(n.run?"Đang diễn ra":"Còn "+n.dd+" ngày nữa")+(n.e.time?" · "+n.e.time:"")})}catch{}}});
@@ -220,7 +221,7 @@ function renderAllPage(){if($("#allPage").hidden)return;const q=nrm($("#aSearch"
   $("#aCount").textContent=q?`${L.length}/${events.length}`:events.length;
   const box=$("#aList");
   box.innerHTML=L.length?L.map(({e,o})=>{const dd=o?diffD(o.s,T0):0,chip=!o?"Đã qua":dd<=0?"Đang diễn ra":"Còn "+dd+" ngày";
-    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="tag">${repTxt(e)}</span><span class="chip">${chip}</span></div><div class="acts"><button class="pill sm" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div></div>`}).join("")
+    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="tag">${repTxt(e)}</span><span class="chip">${chip}</span></div><div class="acts"><button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div></div>`}).join("")
     :`<div class="empty">${events.length?"Không tìm thấy sự kiện phù hợp.":"Chưa có sự kiện nào."}</div>`;
   box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>auth(()=>{resetForm();editEvent(b.dataset.e);ed.showModal()}));
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll()}catch(e){alert(e.message)}}}))}
@@ -246,87 +247,23 @@ $("#vdDel").onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try
 document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
-/* ===== Thời tiết (Open-Meteo) – mô tả bằng chữ ===== */
-const CN=["Nắng","Ít mây","Âm u","Sương mù","Mưa","Tuyết","Dông","Có thể mưa"];
-const cat=c=>c<=1?0:c===2?1:c===3?2:c<=48?3:c<=67?4:c<=77?5:c<=82?4:c<=94?5:6;
-/* Mô tả một khoảng giờ: lấy tình trạng chiếm nhiều giờ nhất; chỉ ghi "Mưa/Dông" khi mưa kéo dài và xác suất cao, còn lại ghi "Có thể mưa".
-   Trả về [mô tả, xác suất mưa cao nhất, xác suất mưa trung bình] */
-function part(j,a,b){const cs=j.hourly.weather_code.slice(a,b),ps=j.hourly.precipitation_probability.slice(a,b).map(x=>x||0),n=Array(7).fill(0);
-  cs.forEach(c=>n[cat(c)]++);const pm=Math.max(0,...ps),rain=n[4]+n[5]+n[6],need=Math.max(2,Math.ceil(cs.length/3));
-  let k=[0,1,2,3].reduce((m,i)=>n[i]>n[m]?i:m,0);if(!(n[0]+n[1]+n[2]+n[3]))k=1;
-  if(rain>=need&&pm>=50)k=n[6]?6:n[5]>n[4]?5:4;else if(pm>=40||(rain>0&&pm>=30))k=7;
-  return[k,pm,ps.length?Math.round(ps.reduce((s,x)=>s+x,0)/ps.length):0]}
-const WKEY="lich-wx-v1";
-const tmo=(u,ms=10000)=>{const c=new AbortController(),id=setTimeout(()=>c.abort(),ms);return fetch(u,{signal:c.signal}).finally(()=>clearTimeout(id))};
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
-/* Nguồn: Open-Meteo (miễn phí, không cần khoá). Tình trạng cả ngày tính từ các giờ ban ngày (6–22h), không dùng mã "xấu nhất ngày" */
-async function wxOpenMeteo(lat,lon){
-  const r=await tmo(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`);
-  if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();
-  return{t:Math.round(j.current.temperature_2m),fl:j.current.apparent_temperature==null?null:Math.round(j.current.apparent_temperature),c:cat(j.current.weather_code),day:j.current.is_day,hi:Math.round(j.daily.temperature_2m_max[0]),lo:Math.round(j.daily.temperature_2m_min[0]),
-    parts:[["Sáng",6,12],["Chiều",12,18],["Tối",18,24]].map(([n,a,b])=>{const[k,p]=part(j,a,b);return[n,k,p]}),
-    days:j.daily.time.map((d,i)=>{const[k,,m]=part(j,i*24+6,i*24+22);return{d,c:k,hi:Math.round(j.daily.temperature_2m_max[i]),lo:Math.round(j.daily.temperature_2m_min[i]),p:m}})}}
-/* Nguồn: Google Weather (qua /api/weather, cần khoá Google ở máy chủ) */
-async function wxGoogle(lat,lon){
-  const r=await tmo(`/api/weather?lat=${(+lat).toFixed(3)}&lon=${(+lon).toFixed(3)}`,8000);
-  if(r.status===503){try{localStorage.setItem("lich-g-off",Date.now()+216e5)}catch{}throw new Error("chưa cấu hình khoá Google")}
-  if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
-function renderWx(W,note){
-  $("#wxT").textContent=W.t+"°C";$("#wxD").textContent=W.c===0&&!W.day?"Trời quang":CN[W.c];
-  $("#wxH").innerHTML=`Cao nhất ${W.hi}° · Thấp nhất ${W.lo}°`+(W.fl!=null?`<br>Cảm giác như ${W.fl}°`:"")+(note?`<br>${esc(note)}`:"");
-  $("#wxP").innerHTML=W.parts.map(([n,k,p])=>`<div><small>${n}</small><b>${k==null?"—":CN[k]}</b><small>${k==null?"":"Mưa "+p+"%"}</small></div>`).join("");
-  $("#wxW").innerHTML=W.days.map((x,i)=>{const dt=new Date(x.d+"T00:00");
-    return`<div class="${i?"":"now"}"><small>${i?["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()]:"Hôm nay"}</small><b>${CN[x.c]}</b><span>${x.hi}°/${x.lo}°</span><small>Mưa ${x.p}%</small></div>`}).join("")}
-async function weather(lat,lon){const errs=[];let W=null,src="";
-  if(+localStorage.getItem("lich-g-off")<Date.now()){try{W=await wxGoogle(lat,lon);src="Google Weather"}catch(e){errs.push("Google: "+(e.name==="AbortError"?"quá thời gian":e.message||"lỗi"))}}
-  for(let i=0;i<2&&!W;i++){try{W=await wxOpenMeteo(lat,lon);src="Open-Meteo"}catch(e){if(!i)await wait(1200);else errs.push("Open-Meteo: "+(e.name==="AbortError"?"quá thời gian":e.message||"lỗi"))}}
-  if(W){try{localStorage.setItem(WKEY,JSON.stringify({W,ts:Date.now()}))}catch{}renderWx(W,"Nguồn: "+src);return}
-  let c=null;try{c=JSON.parse(localStorage.getItem(WKEY)||"null")}catch{}
-  if(c&&c.W&&Date.now()-c.ts<432e5){const d=new Date(c.ts);renderWx(c.W,`Dữ liệu lúc ${pad(d.getHours())}:${pad(d.getMinutes())} (chưa cập nhật được)`);return}
-  $("#wxD").textContent="Không tải được thời tiết";$("#wxH").textContent="";$("#wxW").innerHTML="";$("#wxP").innerHTML=`<div class="wxerr">${esc(errs.join(" · "))}</div>`}
-/* Tên nơi người xem đang đứng (đổi toạ độ → địa danh chi tiết) */
-async function placeName(lat,lon,acc){
-  const get=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
-  try{const a=(await get(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=vi&lat=${lat}&lon=${lon}`)).address||{};
-    const n=[...new Set([acc<=100?a.road:null,a.quarter||a.suburb||a.village||a.hamlet||a.neighbourhood||a.town,a.city_district||a.county||a.city||a.municipality,a.state||a.region].filter(Boolean))].join(", ");if(n)return n}catch{}
-  try{const j=await get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=vi`);
-    const n=[...new Set([j.locality,j.city,j.principalSubdivision].filter(Boolean))].join(", ");if(n)return n}catch{}
-  return null}
-const setLoc=s=>{$("#wxL").textContent=s};
-let watchId=null;
-/* Định vị chính xác: GPS độ chính xác cao, chờ tối đa ~12 giây để lấy kết quả tốt nhất */
-function initWx(){
-  const fb=msg=>{setLoc(msg+" – đang dùng Lâm Đồng (mặc định)");weather(11.94,108.44)};
-  if(!navigator.geolocation)return fb("Thiết bị không hỗ trợ định vị");
-  if(watchId!==null)navigator.geolocation.clearWatch(watchId);
-  setLoc("Đang xác định vị trí chính xác…");
-  let best=null,first=null,done=false,timer;
-  const finish=async()=>{if(done||!best)return;done=true;clearTimeout(timer);navigator.geolocation.clearWatch(watchId);watchId=null;
-    const{latitude:la,longitude:lo,accuracy:ac}=best.coords;
-    if(first&&Math.abs(first.latitude-la)+Math.abs(first.longitude-lo)>.02)weather(la,lo);
-    const n=await placeName(la,lo,ac),km=ac>=1000?(ac/1000).toFixed(1)+" km":Math.round(ac)+" m";
-    setLoc("Vị trí của bạn: "+(n||`${la.toFixed(4)}, ${lo.toFixed(4)}`)+` (sai số ~${km})`)};
-  watchId=navigator.geolocation.watchPosition(p=>{
-    if(!first){first=p.coords;weather(p.coords.latitude,p.coords.longitude);setLoc("Đang tìm tên địa điểm…")}
-    if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
-    if(p.coords.accuracy<=30)finish()},
-   e=>{if(best)finish();else if(!done){done=true;clearTimeout(timer);fb(e&&e.code===1?"Chưa cho phép vị trí":"Không lấy được vị trí")}},
-   {enableHighAccuracy:true,maximumAge:0,timeout:15000});
-  timer=setTimeout(()=>{if(best)finish()},12000)}
-$("#locBtn").onclick=initWx;
-/* Chỉ xoá dữ liệu thời tiết đã lưu rồi tải lại bản mới nhất. Không đụng tới sự kiện hay địa điểm. */
-$("#cleanBtn").onclick=()=>{
-  if(!confirm("Xoá dữ liệu thời tiết rác cũ đã lưu và tải lại bản mới nhất?\n(Sự kiện và địa điểm không bị ảnh hưởng.)"))return;
-  try{localStorage.removeItem(WKEY)}catch{}
-  $("#wxD").textContent="Đang tải lại…";$("#wxH").textContent="";$("#wxP").innerHTML="";$("#wxW").innerHTML="";
-  initWx()};
+/* ===== Tiện ích: tải lại trang, dọn dữ liệu rác cũ trên máy ===== */
+$("#reloadBtn").onclick=()=>location.reload();
+/* Dọn dữ liệu rác cũ: dữ liệu thời tiết của các phiên bản trước, bản ghi "đã nhắc" của năm trước, bộ nhớ đệm cũ. Không đụng tới sự kiện/địa điểm. */
+function cleanJunk(){["lich-wx-v1","lich-g-off","lich-asked-old"].forEach(k=>{try{localStorage.removeItem(k)}catch{}});
+  try{const s=JSON.parse(localStorage.getItem(SENT)||"{}"),k={};for(const x in s)if(+x.split("|")[1]>=now.getFullYear())k[x]=1;localStorage.setItem(SENT,JSON.stringify(k))}catch{}}
+$("#cleanBtn").onclick=async()=>{
+  if(!confirm("Xoá dữ liệu rác cũ trên máy này (dữ liệu thời tiết cũ, bản ghi nhắc của các năm trước, bộ nhớ đệm cũ)?\n(Sự kiện và địa điểm không bị ảnh hưởng.)"))return;
+  cleanJunk();try{if(window.caches)for(const n of await caches.keys())await caches.delete(n)}catch{}
+  alert("Đã dọn xong dữ liệu rác cũ.");location.reload()};
+cleanJunk();
 
 /* ===== Ghi chú địa điểm (không nhắc lịch) ===== */
 let editingP=null;const openP=new Set();
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
   const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi"));
   $("#pCount").textContent=q?`${L.length}/${places.length}`:places.length;
-  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary>${esc(p.name)}</summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary>${esc(p.name)}</summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
   document.querySelectorAll("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   document.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>auth(()=>openPlace(places.find(x=>x.id===b.dataset.pe))));
   document.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá địa điểm này?")){try{await mutate("places","delete",{id:b.dataset.pd});renderPlaces()}catch(e){alert(e.message)}}}))}
@@ -342,7 +279,7 @@ $("#shBtn").onclick=async()=>{const u="https://lich-su-kien.vercel.app/",b=$("#s
   setTimeout(()=>{b.textContent="Chia sẻ liên kết"},2500)};
 function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes();renderPlaces();renderAllPage();renderStatus()}
 if(typeof document!=="undefined"&&!globalThis.__TEST__){
-  route();renderAll();initWx();resetForm();sync();
+  route();renderAll();resetForm();sync();
   setInterval(()=>{if(!document.hidden)sync()},60000);setInterval(()=>{$("#hello").textContent=greet()},6e4);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});addEventListener("online",sync);
   setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);

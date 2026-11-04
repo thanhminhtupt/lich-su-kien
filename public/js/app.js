@@ -261,9 +261,9 @@ cleanJunk();
 /* ===== Ghi chú địa điểm (không nhắc lịch) ===== */
 let editingP=null;const openP=new Set();
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
-  const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi"));
+  const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"}));
   $("#pCount").textContent=q?`${L.length}/${places.length}`:places.length;
-  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary>${esc(p.name)}</summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}</span><span class="pv">${esc(p.note).replace(/\s*\n+\s*/g," · ")}</span></span></summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
   document.querySelectorAll("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   document.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>auth(()=>openPlace(places.find(x=>x.id===b.dataset.pe))));
   document.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá địa điểm này?")){try{await mutate("places","delete",{id:b.dataset.pd});renderPlaces()}catch(e){alert(e.message)}}}))}

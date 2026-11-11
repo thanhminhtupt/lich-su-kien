@@ -53,12 +53,7 @@
     <button class="pill junk" id="cleanBtn">Xoá dữ liệu rác cũ</button>
   </div>
 
-  <section class="card remind" aria-label="Sắp tới">
-    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
-    <div class="btns tools"><button class="swt" id="perm" role="switch" aria-checked="false"><span class="lbl">Thông báo</span><span class="trk"><span class="knob"></span></span></button><a class="abtn purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
-    <div id="notes"></div>
-    <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
-  </section>
+  
 
   <section class="card cal" aria-label="Lịch tháng">
     <div class="bar">
@@ -76,6 +71,13 @@
   <section class="card month" aria-label="Sự kiện trong tháng">
     <div class="sec-h"><h2 id="mTitle">Sự kiện trong tháng</h2></div>
     <div id="mList"></div>
+  </section>
+
+  <section class="card remind" aria-label="Sắp tới">
+    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
+    <div class="btns tools"><button class="swt" id="perm" role="switch" aria-checked="false"><span class="lbl">Thông báo</span><span class="trk"><span class="knob"></span></span></button><a class="abtn purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
+    <div id="notes"></div>
+    <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
   </section>
 
   <section class="card places" aria-label="Ghi chú địa điểm">
@@ -107,6 +109,8 @@
     <div id="aList"></div>
   </div>
 </section>
+
+<div class="iconrow"><button class="pill green" id="iconBtn">Tạo Icon Màn Hình</button></div>
 
 <footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a><div id="sync"></div></footer>
 
@@ -156,10 +160,18 @@
 
 <dialog id="pl"><form id="plF" class="sheet">
   <h2 id="plTitle">Thêm địa điểm</h2>
-  <label>Tên địa điểm<input id="plN" required maxlength="80"></label>
-  <label>Ghi chú<textarea id="plC" rows="6" maxlength="1000" required></textarea></label>
+  <label>Tên địa điểm<input id="plN" required maxlength="80" placeholder="Ví dụ: Vũng Tàu"></label>
+  <div id="spots"></div>
+  <button type="button" class="pill green" id="spotAdd">+ Thêm vị trí</button>
+  <label>Ghi chú địa điểm (tuỳ chọn)<textarea id="plC" rows="4" maxlength="1000" placeholder="Ví dụ: sáng đi làng chài"></textarea></label>
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button class="pill primary">Lưu địa điểm</button></div>
 </form></dialog>
+
+<dialog id="ic"><div class="sheet">
+  <h2>Tạo icon ngoài màn hình</h2>
+  <div id="icB"></div>
+  <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
+</div></dialog>
 
 <script src="/js/app.js" defer></script>
 </body>

@@ -9,6 +9,9 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trướ
 - Dòng **Lưu trữ %** cạnh nút Thêm sự kiện, kèm cảnh báo khi Vercel/Upstash báo lỗi hoặc gần hết hạn mức.
 - Mã QR chia sẻ: `public/assets/qr.svg` (tạo cho địa chỉ https://lich-su-kien.vercel.app/; đổi tên miền thì cần tạo lại mã QR).
 
+- Địa điểm gồm tên, nhiều vị trí (tên + link + ghi chú), ghi chú; chỉ hiện phần có nội dung. Không cho trùng tên (sự kiện và địa điểm).
+- Nút **Tạo Icon Màn Hình** ở cuối trang hướng dẫn / kích hoạt thêm icon ra màn hình điện thoại.
+
 ## Dữ liệu dùng chung (khuyến nghị)
 Thêm/sửa/xoá sự kiện và địa điểm được lưu trên máy chủ (Vercel Function `api/store.js` + Upstash Redis), mọi người mở trang đều thấy dữ liệu mới nhất (tự đồng bộ mỗi 60 giây khi đang mở trang và khi mở lại trang). Mật khẩu được kiểm tra **trên máy chủ**.
 

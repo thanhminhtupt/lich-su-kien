@@ -77,7 +77,10 @@ function pruneLocal(){const n=events.length;
 function localApply(kind,op,x){let L=kind==="events"?events:places;
   L=op==="delete"?L.filter(i=>i.id!==x.id):L.some(i=>i.id===x.id)?L.map(i=>i.id===x.id?x:i):[...L,x];
   if(kind==="events")events=L;else places=L;save()}
+const nameKey=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/\s+/g," ").trim();
 async function mutate(kind,op,x){
+  if(op==="upsert"&&(kind==="events"?events:places).some(i=>i.id!==x.id&&nameKey(i.name)===nameKey(x.name)))
+    throw new Error((kind==="events"?"Tên sự kiện":"Tên địa điểm")+` "${x.name}" đã tồn tại. Hãy dùng tên khác.`);
   if(mode!=="server")return localApply(kind,op,x);
   if(!serverV&&(events.length||places.length))await api({op:"import",events,places});
   applyServer(await api({op,kind,item:x,id:x.id}))}
@@ -186,7 +189,7 @@ function auth(cb){if(Date.now()<unlockUntil)return cb();afterAuth=cb;$("#pwI").v
 pw.addEventListener("close",()=>{afterAuth=null});
 $("#pwF").onsubmit=async ev=>{ev.preventDefault();const v=$("#pwI").value;
   try{if(mode==="server")await api({op:"check"},v);else if(v!==PASS)throw new Error("Mật khẩu không đúng.");
-    pwd=v;unlockUntil=Date.now()+3e5;const f=afterAuth;afterAuth=null;pw.close();if(f)f()}
+    pwd=v;unlockUntil=Date.now()+18e4;const f=afterAuth;afterAuth=null;pw.close();if(f)f()}
   catch(e){$("#pwE").textContent=e.message||"Mật khẩu không đúng."}};
 const openAdd=()=>auth(()=>{resetForm();ed.showModal()});
 $("#addBtn").onclick=openAdd;$("#addBtn2").onclick=openAdd;
@@ -258,23 +261,64 @@ $("#cleanBtn").onclick=async()=>{
   alert("Đã dọn xong dữ liệu rác cũ.");location.reload()};
 cleanJunk();
 
-/* ===== Ghi chú địa điểm (không nhắc lịch) ===== */
+/* ===== Ghi chú địa điểm (không nhắc lịch). Mỗi địa điểm: tên, nhiều vị trí (tên + link + ghi chú), ghi chú ===== */
 let editingP=null;const openP=new Set();
+const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
+function placeBody(p){let x="";
+  (p.spots||[]).forEach(s=>{x+=`<div class="sp"><div class="kv"><span class="k">Vị trí:</span> <b>${esc(s.n||"Vị trí")}</b>${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Link ↗</a>`:""}</div>${s.c?`<div class="kv"><span class="k">Ghi chú vị trí:</span> ${esc(s.c)}</div>`:""}</div>`});
+  if(p.note)x+=p.note.includes("\n")?`<div class="kv"><span class="k">Ghi chú địa điểm:</span></div><p>${esc(p.note)}</p>`:`<div class="kv"><span class="k">Ghi chú địa điểm:</span> ${esc(p.note)}</div>`;
+  return x||`<div class="empty">Chưa có chi tiết.</div>`}
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
-  const L=places.filter(p=>!q||nrm(p.name).includes(q)||nrm(p.note).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"}));
+  const txt=p=>[p.name,p.note,...(p.spots||[]).flatMap(s=>[s.n,s.c])].filter(Boolean).join(" ");
+  const L=places.filter(p=>!q||nrm(txt(p)).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"}));
   $("#pCount").textContent=q?`${L.length}/${places.length}`:places.length;
-  $("#pList").innerHTML=L.length?L.map(p=>`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}</span><span class="pv">${esc(p.note).replace(/\s*\n+\s*/g," · ")}</span></span></summary><div class="pb"><p>${esc(p.note)}</p><div class="acts"><button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $("#pList").innerHTML=L.length?L.map(p=>{const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · ");
+    return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}<div class="acts"><button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button></div></div></details>`}).join(""):`<div class="empty">${places.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
   document.querySelectorAll("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   document.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>auth(()=>openPlace(places.find(x=>x.id===b.dataset.pe))));
   document.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá địa điểm này?")){try{await mutate("places","delete",{id:b.dataset.pd});renderPlaces()}catch(e){alert(e.message)}}}))}
-function openPlace(p){editingP=p?p.id:null;$("#plTitle").textContent=p?"Sửa địa điểm":"Thêm địa điểm";$("#plN").value=p?p.name:"";$("#plC").value=p?p.note:"";pl.showModal();$("#plN").focus()}
+/* Các dòng "vị trí" trong form */
+function numberSpots(){document.querySelectorAll("#spots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Vị trí "+(i+1))}
+function addSpot(s){s=s||{};const d=document.createElement("div");d.className="spot";
+  d.innerHTML=`<div class="spot-h"><b></b><button type="button" class="pill sm danger" data-sx>Xoá vị trí</button></div>
+<label>Tên vị trí<input class="sn" maxlength="80" placeholder="Ví dụ: Quảng Trường"></label>
+<label>Link vị trí<input class="su" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
+<label>Ghi chú vị trí (tuỳ chọn)<input class="sc" maxlength="300" placeholder="Ví dụ: nơi này cần đi buổi tối"></label>`;
+  d.querySelector(".sn").value=s.n||"";d.querySelector(".su").value=s.u||"";d.querySelector(".sc").value=s.c||"";
+  d.querySelector("[data-sx]").onclick=()=>{d.remove();numberSpots()};$("#spots").append(d);numberSpots();return d}
+function readSpots(){const out=[];
+  for(const d of document.querySelectorAll("#spots .spot")){let n=d.querySelector(".sn").value.trim(),u=d.querySelector(".su").value.trim(),c=d.querySelector(".sc").value.trim();
+    if(!n&&!u&&!c)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u))throw new Error("Link vị trí không hợp lệ: "+u);
+    out.push({n:n||(u?"Vị trí":""),u,c})}
+  return out}
+$("#spotAdd").onclick=()=>addSpot().querySelector(".sn").focus();
+function openPlace(p){editingP=p?p.id:null;$("#plTitle").textContent=p?"Sửa địa điểm":"Thêm địa điểm";$("#plN").value=p?p.name:"";$("#plC").value=p?p.note||"":"";
+  $("#spots").innerHTML="";(p&&p.spots||[]).forEach(addSpot);pl.showModal();$("#plN").focus()}
 $("#pAdd").onclick=()=>auth(()=>openPlace(null));
 $("#pSearch").addEventListener("input",renderPlaces);
-$("#plF").onsubmit=async ev=>{ev.preventDefault();const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim()};if(!o.name||!o.note)return;
-  try{await mutate("places","upsert",o);pl.close();$("#pSearch").value="";renderPlaces()}catch(e){alert(e.message)}};
+$("#plF").onsubmit=async ev=>{ev.preventDefault();
+  try{const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim(),spots:readSpots()};if(!o.name)return;
+    await mutate("places","upsert",o);pl.close();$("#pSearch").value="";renderPlaces()}catch(e){alert(e.message)}};
+
+/* ===== Tạo icon ngoài màn hình ===== */
+let dip=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e});addEventListener("appinstalled",()=>{dip=null});
+$("#iconBtn").onclick=async()=>{const body=$("#icB"),ua=navigator.userAgent;
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  const pv='<div class="icpv"><img src="/assets/icon-180.png" alt="Icon Lịch Sự Kiện"><b>Lịch Sự Kiện</b></div>';
+  if(standalone){body.innerHTML=pv+"<p>Ứng dụng đã được thêm ra màn hình và đang chạy từ icon rồi.</p>";return ic.showModal()}
+  if(dip){try{dip.prompt();await dip.userChoice}catch{}dip=null;return}
+  const inApp=/Zalo|FBAN|FBAV|Instagram|Line\//i.test(ua),ios=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),and=/android/i.test(ua);
+  let s;
+  if(inApp)s="<p>Bạn đang mở trong ứng dụng khác (Zalo, Facebook…). Hãy bấm menu của ứng dụng đó rồi chọn <b>Mở bằng trình duyệt</b> ("+(ios?"Safari":"Chrome")+"), sau đó bấm lại nút này.</p>";
+  else if(ios)s='<ol class="steps"><li>Mở trang bằng <b>Safari</b>.</li><li>Bấm nút <b>Chia sẻ</b> (hình vuông có mũi tên hướng lên) ở thanh dưới.</li><li>Kéo xuống, chọn <b>Thêm vào Màn hình chính</b>.</li><li>Bấm <b>Thêm</b>. Icon sẽ xuất hiện ngoài màn hình.</li></ol><p class="note">iPhone không cho trang web tự thêm icon, nên cần làm 4 bước trên.</p>';
+  else if(and)s='<ol class="steps"><li>Mở trang bằng <b>Chrome</b>.</li><li>Bấm menu <b>⋮</b> ở góc trên.</li><li>Chọn <b>Cài đặt ứng dụng</b> (hoặc <b>Thêm vào màn hình chính</b>).</li><li>Bấm <b>Cài đặt</b> / <b>Thêm</b>.</li></ol>';
+  else s='<ol class="steps"><li>Với Chrome hoặc Edge: bấm biểu tượng <b>cài đặt ứng dụng</b> ở cuối thanh địa chỉ.</li><li>Hoặc mở menu và chọn <b>Cài đặt Lịch Sự Kiện</b>.</li></ol>';
+  body.innerHTML=pv+s;ic.showModal()};
+const ic=$("#ic");
 
 $("#shBtn").onclick=async()=>{const u="https://lich-su-kien.vercel.app/",b=$("#shBtn");
-  try{if(navigator.share){await navigator.share({title:"Lịch Sự Kiện",text:"Lịch sự kiện âm dương, nhắc lịch và thời tiết",url:u});return}}catch{return}
+  try{if(navigator.share){await navigator.share({title:"Lịch Sự Kiện",text:"Lịch sự kiện âm dương, nhắc lịch và ghi chú địa điểm",url:u});return}}catch{return}
   try{await navigator.clipboard.writeText(u);b.textContent="Đã sao chép liên kết"}catch{b.textContent=u}
   setTimeout(()=>{b.textContent="Chia sẻ liên kết"},2500)};
 function renderAll(){renderToday();renderCal();renderDetail();renderMonth();renderNotes();renderPlaces();renderAllPage();renderStatus()}

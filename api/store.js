@@ -21,7 +21,12 @@ function cleanEvent(e){if(!e||typeof e!=="object")return null;
   return{id,name,cal,m,a,b,repeat,every,year,time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
 function cleanPlace(p){if(!p||typeof p!=="object")return null;
   const id=str(p.id,40),name=str(p.name,80),note=str(p.note,1000);
-  return /^[\w-]+$/.test(id)&&name&&note?{id,name,note}:null}
+  const spots=(Array.isArray(p.spots)?p.spots:[]).slice(0,20).map(x=>{if(!x||typeof x!=="object")return null;
+    const n=str(x.n,80),c=str(x.c,300);let u=str(x.u,500);if(u&&!/^https?:\/\/[^\s]+$/i.test(u))u="";
+    return n||u||c?{n,u,c}:null}).filter(Boolean);
+  return /^[\w-]+$/.test(id)&&name?{id,name,note,spots}:null}
+/* Tên không được trùng (không phân biệt hoa thường, dấu, khoảng trắng thừa) */
+const nameKey=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/\s+/g," ").trim();
 /* Sự kiện "một lần" đã kết thúc quá 30 ngày thì tự xoá. Sự kiện hằng năm và địa điểm không bao giờ bị xoá. */
 function expired(e){if(!e||e.repeat)return false;
   try{const end=e.cal==="s"?new Date(Date.UTC(e.year,e.m-1,e.b)):(d=>new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())))(toSolar(e.b,e.m,e.year));
@@ -55,6 +60,7 @@ module.exports=async(req,res)=>{
     if(b.op==="delete")d[k]=d[k].filter(i=>i.id!==String(b.id));
     else if(b.op==="upsert"){
       const it=(k==="events"?cleanEvent:cleanPlace)(b.item);if(!it)return res.status(400).json({error:"Dữ liệu không hợp lệ."});
+      if(d[k].some(x=>x.id!==it.id&&nameKey(x.name)===nameKey(it.name)))return res.status(409).json({error:(k==="events"?"Tên sự kiện":"Tên địa điểm")+` "${it.name}" đã tồn tại. Hãy dùng tên khác.`});
       const i=d[k].findIndex(x=>x.id===it.id);
       if(i>=0)d[k][i]=it;else{if(d[k].length>=500)return res.status(400).json({error:"Đã đạt giới hạn 500 mục."});d[k].push(it)}}
     else return res.status(400).json({error:"Yêu cầu không hợp lệ."});

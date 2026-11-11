@@ -29,7 +29,7 @@
     <button class="pill red" id="addBtn">+ Thêm sự kiện</button>
     <div class="stor" id="stor" aria-live="polite"></div>
   </div>
-  <a class="by" href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a>
+  <div class="hr"><button class="bell" id="bell" aria-label="Thông báo sắp tới"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="#f5b400" stroke="#c98d00" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="#c98d00" stroke-width="1.4" stroke-linecap="round"/></svg><span class="n" id="bellN" hidden>0</span></button><a class="by" href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
 </header>
 <noscript><div class="card">Trang cần bật JavaScript để hoạt động.</div></noscript>
 
@@ -155,6 +155,7 @@
 <dialog id="vd"><div class="sheet">
   <h2 id="vdN"></h2>
   <div id="vdB"></div>
+  <div class="btns" id="vdRem"><button class="pill orange" id="vdIcs">🔔 Thêm lời nhắc (Lịch)</button><button class="pill purple" id="vdGcal" hidden>Google Calendar</button></div>
   <div class="acts"><button class="pill" data-close>Đóng</button><button class="pill danger" id="vdDel">Xoá</button><button class="pill primary" id="vdEdit">Sửa</button></div>
 </div></dialog>
 

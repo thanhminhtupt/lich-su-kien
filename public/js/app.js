@@ -87,6 +87,9 @@ async function mutate(kind,op,x){
 
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m;
 const repTxt=e=>e.repeat?(e.every===2?"2 năm/lần · từ "+e.year:"Hằng năm"):"Một lần · năm "+e.year;
+const repIcon=e=>!e.repeat?"1️⃣":e.every===2?"2️⃣":"🔁";
+const repChip=(e,c="chip")=>`<span class="${c} ${repCls(e)}">${repIcon(e)} ${esc(repTxt(e))}</span>`;
+const repCls=e=>!e.repeat?"t-o":e.every===2?"t-t":"t-y";
 const yearOk=(e,y)=>e.repeat?(e.every===2?(((y-e.year)%2)+2)%2===0:true):e.year===y;
 
 /* Khoảng ngày dương lịch của sự kiện trong năm y (năm âm nếu là sự kiện âm lịch) */
@@ -135,14 +138,16 @@ function renderCal(){mS.value=vm;yS.value=vy;
     g.append(b)}}
 function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel),hol=holiday(sel,l);
   $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>${hol.length?` · <span class="holt">${hol.join(", ")}</span>`:""}`+
-   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span><span class="tag">${repTxt(e)}</span>${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span>${repChip(e,"tag")}${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
 /* Danh sách sự kiện của tháng đang xem */
 function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   for(let i=1;i<=n;i++)eventsOn(new Date(vy,vm,i)).forEach(e=>{const r=mp.get(e.id)||{e,f:i,l:i};r.l=i;mp.set(e.id,r)});
   $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
-  const L=[...mp.values()].sort((a,b)=>a.f-b.f),box=$("#mList");
-  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}" data-ev="${esc(r.e.id)}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)} · ${repTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small></span></button>`).join(""):`<div class="empty">Tháng này chưa có sự kiện.</div>`;
-  const hl=[];for(let i=1;i<=n;i++){const d=new Date(vy,vm,i),h=holiday(d,toLunar(i,vm+1,vy));if(h.length)hl.push(`<div><b>${i}/${vm+1}</b> · ${h.join(", ")}</div>`)}
+  /* chỉ hiện những ngày từ hôm nay trở đi: ngày đã qua trong tháng được ẩn đi */
+  const first=new Date(vy,vm,1),last=new Date(vy,vm,n),cut=T0<first?0:T0>last?n+1:T0.getDate();
+  const all=[...mp.values()],L=all.filter(r=>r.l>=cut).sort((a,b)=>a.f-b.f),box=$("#mList");
+  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}" data-ev="${esc(r.e.id)}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small><span class="chips">${repChip(r.e)}<span class="chip d">${(()=>{const dd=diffD(new Date(vy,vm,r.f),T0);return dd>0?"Còn "+dd+" ngày":r.l>r.f?"Đang diễn ra":"Hôm nay"})()}</span></span></span></button>`).join(""):`<div class="empty">${all.length?"Các sự kiện trong tháng này đã qua.":"Tháng này chưa có sự kiện."}</div>`;
+  const hl=[];for(let i=Math.max(cut,1);i<=n;i++){const d=new Date(vy,vm,i),h=holiday(d,toLunar(i,vm+1,vy));if(h.length)hl.push(`<div><b>${i}/${vm+1}</b> · ${h.join(", ")}</div>`)}
   if(hl.length)box.insertAdjacentHTML("beforeend",`<div class="hols">${hl.join("")}</div>`);
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sel=new Date(vy,vm,+b.dataset.d);renderCal();renderDetail()})}
 mS.onchange=()=>{vm=+mS.value;renderCal();renderMonth()};yS.onchange=()=>{vy=+yS.value;renderCal();renderMonth()};
@@ -152,13 +157,18 @@ $("#goToday").onclick=()=>{vy=now.getFullYear();vm=now.getMonth();sel=T0;renderC
 
 const MUTE="lich-notif-off",canN="Notification"in window;
 const nOn=()=>canN&&Notification.permission==="granted"&&localStorage.getItem(MUTE)!=="1";
+/* Số thông báo: chuông trên trang, tiêu đề tab và số trên icon màn hình (nếu thiết bị hỗ trợ) */
+function updateBadge(n){const bn=$("#bellN");bn.hidden=!n;bn.textContent=n>99?"99+":n;
+  document.title=(n?`(${n}) `:"")+"Lịch Sự Kiện";
+  try{const on=localStorage.getItem(MUTE)!=="1"&&n>0;if(navigator.setAppBadge){on?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch{}}
+$("#bell").onclick=()=>{if(location.hash==="#tat-ca"){location.hash=""}setTimeout(()=>$(".remind").scrollIntoView({behavior:"smooth",block:"start"}),50)};
 /* ===== Nhắc lịch: trước 7 ngày, trước 3 ngày, đang diễn ra. Sự kiện một lần hết hạn thì thôi ===== */
 function remList(){const out=[],up=[];
   events.forEach(e=>{const o=nextOcc(e);if(!o)return;const dd=diffD(o.s,T0),it={e,o,dd,run:dd<=0};up.push(it);if(dd<=7)out.push(it)});
   const by=(a,b)=>a.o.s-b.o.s;return{out:out.sort(by),up:up.sort(by)}}
-function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;
-  const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chip">${lbl}</span></span></button>`;
-  $("#notes").innerHTML=up.length?up.slice(0,10).map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7",(n.run?"Đang diễn ra":n.dd<=3?"Nhắc lần 2":n.dd<=7?"Nhắc lần 1":"Sắp tới")+" · "+repTxt(n.e))).join("")
+function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;updateBadge(out.length);
+  const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></button>`;
+  $("#notes").innerHTML=up.length?up.slice(0,10).map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7")).join("")
     +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`;
   const pm=$("#perm"),lb=pm.querySelector(".lbl");pm.classList.remove("on","off");pm.disabled=false;
   const on=nOn();pm.setAttribute("aria-checked",on?"true":"false");
@@ -224,7 +234,7 @@ function renderAllPage(){if($("#allPage").hidden)return;const q=nrm($("#aSearch"
   $("#aCount").textContent=q?`${L.length}/${events.length}`:events.length;
   const box=$("#aList");
   box.innerHTML=L.length?L.map(({e,o})=>{const dd=o?diffD(o.s,T0):0,chip=!o?"Đã qua":dd<=0?"Đang diễn ra":"Còn "+dd+" ngày";
-    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="tag">${repTxt(e)}</span><span class="chip">${chip}</span></div><div class="acts"><button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div></div>`}).join("")
+    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="chips">${repChip(e,"tag")}<span class="chip d">${chip}</span></span></div><div class="acts"><button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div></div>`}).join("")
     :`<div class="empty">${events.length?"Không tìm thấy sự kiện phù hợp.":"Chưa có sự kiện nào."}</div>`;
   box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>auth(()=>{resetForm();editEvent(b.dataset.e);ed.showModal()}));
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:b.dataset.d});renderAll()}catch(e){alert(e.message)}}}))}
@@ -244,7 +254,33 @@ function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
   let lu="";if(e.cal==="s"&&o){const l=toLunar(o.s.getDate(),o.s.getMonth()+1,o.s.getFullYear());lu=row("Âm lịch",`${l.d}/${l.m} (ngày bắt đầu)`)}
   $("#vdN").textContent=e.name;
   $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
-  vd.showModal()}
+  $("#vdGcal").hidden=!/android/i.test(navigator.userAgent);vd.showModal()}
+/* Thêm lời nhắc vào ứng dụng Lịch của điện thoại (file .ics có nhắc trước 7 ngày, 3 ngày và đúng ngày) */
+const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+const icsEsc=s=>String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n");
+const tmOk=e=>/^\d{2}:\d{2}$/.test(e.time||"");
+function eventOccs(e,max=5){const out=[],Y=now.getFullYear();
+  for(let y=Y-1;y<=Y+10&&out.length<max;y++){if(e.repeat?!yearOk(e,y):y!==e.year)continue;const o=occ(e,y);if(day0(o.en)>=T0)out.push(o)}
+  return out.sort((a,b)=>a.s-b.s)}
+function endHM(e){const[h,m]=e.time.split(":").map(Number);return h>=23?"2359":pad(h+1)+pad(m)}
+function makeIcs(e){const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Lich Su Kien//VI","CALSCALE:GREGORIAN","METHOD:PUBLISH"],stamp=new Date().toISOString().replace(/[-:]|\.\d{3}/g,"");
+  const desc=icsEsc(dateTxt(e)+" · "+repTxt(e)+(e.note?"\n"+e.note:""));
+  eventOccs(e).forEach((o,i)=>{const tm=tmOk(e),end=new Date(o.en.getFullYear(),o.en.getMonth(),o.en.getDate()+1);
+    L.push("BEGIN:VEVENT",`UID:${e.id}-${ymd(o.s)}@lich-su-kien.vercel.app`,"DTSTAMP:"+stamp,"SUMMARY:"+icsEsc(e.name),"DESCRIPTION:"+desc,
+      tm?`DTSTART:${ymd(o.s)}T${e.time.replace(":","")}00`:`DTSTART;VALUE=DATE:${ymd(o.s)}`,
+      tm?`DTEND:${ymd(o.en)}T${endHM(e)}00`:`DTEND;VALUE=DATE:${ymd(end)}`);
+    [[tm?"-P7D":"-P6DT15H","Còn 7 ngày: "],[tm?"-P3D":"-P2DT15H","Còn 3 ngày: "],[tm?"PT0S":"PT8H","Hôm nay: "]].forEach(([tr,pre])=>L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(pre+e.name),"TRIGGER:"+tr,"END:VALARM"));
+    L.push("END:VEVENT")});
+  L.push("END:VCALENDAR");return L.join("\r\n")}
+function gcalUrl(e){const o=eventOccs(e,1)[0];if(!o)return null;const tm=tmOk(e),end=new Date(o.en.getFullYear(),o.en.getMonth(),o.en.getDate()+1);
+  const d=tm?`${ymd(o.s)}T${e.time.replace(":","")}00/${ymd(o.en)}T${endHM(e)}00`:`${ymd(o.s)}/${ymd(end)}`;
+  const rec=e.repeat&&e.cal==="s"?"&recur="+encodeURIComponent("RRULE:FREQ=YEARLY"+(e.every===2?";INTERVAL=2":"")):"";
+  return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.name)}&dates=${d}&details=${encodeURIComponent(dateTxt(e)+(e.note?"\n"+e.note:""))}${rec}`}
+$("#vdIcs").onclick=()=>{const e=events.find(x=>x.id===vdId);if(!e)return;
+  if(!eventOccs(e,1).length)return alert("Sự kiện này đã kết thúc, không còn ngày sắp tới để nhắc.");
+  const a=document.createElement("a");a.href="data:text/calendar;charset=utf-8,"+encodeURIComponent(makeIcs(e));
+  a.download=(e.name.replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"")||"su-kien")+".ics";document.body.append(a);a.click();a.remove()};
+$("#vdGcal").onclick=()=>{const e=events.find(x=>x.id===vdId),u=e&&gcalUrl(e);if(u)window.open(u,"_blank","noopener");else alert("Sự kiện này đã kết thúc.")};
 $("#vdEdit").onclick=()=>auth(()=>{vd.close();resetForm();editEvent(vdId);ed.showModal()});
 $("#vdDel").onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:vdId});vd.close();renderAll()}catch(e){alert(e.message)}}});
 document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
@@ -264,9 +300,9 @@ cleanJunk();
 /* ===== Ghi chú địa điểm (không nhắc lịch). Mỗi địa điểm: tên, nhiều vị trí (tên + link + ghi chú), ghi chú ===== */
 let editingP=null;const openP=new Set();
 const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
-function placeBody(p){let x="";
-  (p.spots||[]).forEach(s=>{x+=`<div class="sp"><div class="kv">${s.n?`<b>${esc(s.n)}</b>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Map</a>`:""}</div>${s.c?`<div class="kv">${esc(s.c)}</div>`:""}</div>`});
-  if(p.note)x+=p.note.includes("\n")?`<div class="kv"><span class="k">Ghi chú:</span></div><p>${esc(p.note)}</p>`:`<div class="kv"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
+function placeBody(p){let x="";const sp=p.spots||[];
+  if(sp.length)x+='<ul class="spl">'+sp.map(s=>`<li>${s.n?`<span class="sn2">${esc(s.n)}</span>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.c?`<div class="sc2">${esc(s.c)}</div>`:""}</li>`).join("")+"</ul>";
+  if(p.note)x+=`<div class="pnote"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
   const txt=p=>[p.name,p.note,...(p.spots||[]).flatMap(s=>[s.n,s.c])].filter(Boolean).join(" ");

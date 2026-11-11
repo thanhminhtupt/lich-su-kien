@@ -12,6 +12,9 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trướ
 - Địa điểm gồm tên, nhiều vị trí (tên + link + ghi chú), ghi chú; chỉ hiện phần có nội dung. Không cho trùng tên (sự kiện và địa điểm).
 - Nút **Tạo Icon Màn Hình** ở cuối trang hướng dẫn / kích hoạt thêm icon ra màn hình điện thoại.
 
+- Chuông thông báo hiện số sự kiện trong 7 ngày tới; nếu đã thêm app ra màn hình, số này hiện trên icon (khi thiết bị hỗ trợ).
+- Nút **Thêm lời nhắc (Lịch)** trong chi tiết sự kiện: tạo file .ics có nhắc trước 7 ngày, 3 ngày và đúng ngày (Android có thêm nút Google Calendar).
+
 ## Dữ liệu dùng chung (khuyến nghị)
 Thêm/sửa/xoá sự kiện và địa điểm được lưu trên máy chủ (Vercel Function `api/store.js` + Upstash Redis), mọi người mở trang đều thấy dữ liệu mới nhất (tự đồng bộ mỗi 60 giây khi đang mở trang và khi mở lại trang). Mật khẩu được kiểm tra **trên máy chủ**.
 

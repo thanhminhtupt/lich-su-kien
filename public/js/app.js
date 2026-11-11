@@ -105,7 +105,7 @@ function eventsOn(date){const d=date.getDate(),m=date.getMonth()+1,y=date.getFul
 /* ===== Hôm nay ===== */
 const greet=()=>{const h=new Date().getHours();return"Xin chào "+(h>=5&&h<11?"buổi sáng":h>=11&&h<13?"buổi trưa":h>=13&&h<18?"buổi chiều":h>=18&&h<22?"buổi tối":"buổi đêm")};
 function renderToday(){$("#hello").textContent=greet();const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());
-  $("#wd").textContent=WD[now.getDay()];
+  $("#wd").textContent="Hôm nay là "+WD[now.getDay()].toLowerCase();
   $("#solar").textContent=`Ngày ${now.getDate()} tháng ${now.getMonth()+1} năm ${now.getFullYear()}`;
   $("#lunar").textContent=`Âm lịch: ngày ${l.d} tháng ${l.m}${l.leap?" (nhuận)":""} năm ${canChi(l.y)}`}
 
@@ -265,8 +265,8 @@ cleanJunk();
 let editingP=null;const openP=new Set();
 const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
 function placeBody(p){let x="";
-  (p.spots||[]).forEach(s=>{x+=`<div class="sp"><div class="kv"><span class="k">Vị trí:</span> <b>${esc(s.n||"Vị trí")}</b>${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Link ↗</a>`:""}</div>${s.c?`<div class="kv"><span class="k">Ghi chú vị trí:</span> ${esc(s.c)}</div>`:""}</div>`});
-  if(p.note)x+=p.note.includes("\n")?`<div class="kv"><span class="k">Ghi chú địa điểm:</span></div><p>${esc(p.note)}</p>`:`<div class="kv"><span class="k">Ghi chú địa điểm:</span> ${esc(p.note)}</div>`;
+  (p.spots||[]).forEach(s=>{x+=`<div class="sp"><div class="kv">${s.n?`<b>${esc(s.n)}</b>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Map</a>`:""}</div>${s.c?`<div class="kv">${esc(s.c)}</div>`:""}</div>`});
+  if(p.note)x+=p.note.includes("\n")?`<div class="kv"><span class="k">Ghi chú:</span></div><p>${esc(p.note)}</p>`:`<div class="kv"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
 function renderPlaces(){const q=nrm($("#pSearch").value.trim());
   const txt=p=>[p.name,p.note,...(p.spots||[]).flatMap(s=>[s.n,s.c])].filter(Boolean).join(" ");
@@ -290,7 +290,7 @@ function readSpots(){const out=[];
   for(const d of document.querySelectorAll("#spots .spot")){let n=d.querySelector(".sn").value.trim(),u=d.querySelector(".su").value.trim(),c=d.querySelector(".sc").value.trim();
     if(!n&&!u&&!c)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
     if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u))throw new Error("Link vị trí không hợp lệ: "+u);
-    out.push({n:n||(u?"Vị trí":""),u,c})}
+    out.push({n,u,c})}
   return out}
 $("#spotAdd").onclick=()=>addSpot().querySelector(".sn").focus();
 function openPlace(p){editingP=p?p.id:null;$("#plTitle").textContent=p?"Sửa địa điểm":"Thêm địa điểm";$("#plN").value=p?p.name:"";$("#plC").value=p?p.note||"":"";

@@ -18,7 +18,9 @@ function cleanEvent(e){if(!e||typeof e!=="object")return null;
   const id=str(e.id,40),name=str(e.name,80),cal=e.cal==="s"?"s":e.cal==="l"?"l":null,m=int(e.m,1,12);
   let a=int(e.a,1,31),b=int(e.b,1,31);if(!/^[\w-]+$/.test(id)||!name||!cal||!m||!a||!b)return null;if(b<a)[a,b]=[b,a];
   const repeat=!!e.repeat,every=repeat&&+e.every===2?2:1,year=repeat&&every===1?null:int(e.year,1900,2200);if(!repeat&&!year)return null;if(every===2&&!year)return null;
-  return{id,name,cal,m,a,b,repeat,every,year,time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
+  const spots=(Array.isArray(e.spots)?e.spots:[]).slice(0,20).map(x=>{if(!x||typeof x!=="object")return null;
+    const n=str(x.n,80);let u=str(x.u,500);if(u&&!/^https?:\/\/[^\s]+$/i.test(u))u="";return n||u?{n,u}:null}).filter(Boolean);
+  return{id,name,cal,m,a,b,repeat,every,year,spots,time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
 function cleanPlace(p){if(!p||typeof p!=="object")return null;
   const id=str(p.id,40),name=str(p.name,80),note=str(p.note,1000);
   const spots=(Array.isArray(p.spots)?p.spots:[]).slice(0,20).map(x=>{if(!x||typeof x!=="object")return null;

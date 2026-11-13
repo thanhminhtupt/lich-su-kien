@@ -87,6 +87,7 @@ async function mutate(kind,op,x){
 
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m;
 const repTxt=e=>e.repeat?(e.every===2?"2 năm/lần · từ "+e.year:"Hằng năm"):"Một lần · năm "+e.year;
+const spotsHtml=e=>(e.spots||[]).map(s=>`<span class="evs">${esc(s.n||"")}${s.n&&s.u?" - ":""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}</span>`).join("");
 const repIcon=e=>!e.repeat?"1️⃣":e.every===2?"2️⃣":"🔁";
 const repChip=(e,c="chip")=>`<span class="${c} ${repCls(e)}">${repIcon(e)} ${esc(repTxt(e))}</span>`;
 const repCls=e=>!e.repeat?"t-o":e.every===2?"t-t":"t-y";
@@ -138,7 +139,7 @@ function renderCal(){mS.value=vm;yS.value=vy;
     g.append(b)}}
 function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel),hol=holiday(sel,l);
   $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>${hol.length?` · <span class="holt">${hol.join(", ")}</span>`:""}`+
-   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span>${repChip(e,"tag")}${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span>${repChip(e,"tag")}${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${spotsHtml(e)}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
 /* Danh sách sự kiện của tháng đang xem */
 function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   for(let i=1;i<=n;i++)eventsOn(new Date(vy,vm,i)).forEach(e=>{const r=mp.get(e.id)||{e,f:i,l:i};r.l=i;mp.set(e.id,r)});
@@ -167,7 +168,7 @@ function remList(){const out=[],up=[];
   events.forEach(e=>{const o=nextOcc(e);if(!o)return;const dd=diffD(o.s,T0),it={e,o,dd,run:dd<=0};up.push(it);if(dd<=7)out.push(it)});
   const by=(a,b)=>a.o.s-b.o.s;return{out:out.sort(by),up:up.sort(by)}}
 function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;updateBadge(out.length);
-  const item=(n,st,lbl)=>`<button class="rem ${st}" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></button>`;
+  const item=(n,st,lbl)=>`<div class="rem ${st}" role="button" tabindex="0" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${spotsHtml(n.e)}${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></div>`;
   $("#notes").innerHTML=up.length?up.slice(0,10).map(n=>item(n,n.run?"now":n.dd<=3?"w3":"w7")).join("")
     +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`;
   const pm=$("#perm"),lb=pm.querySelector(".lbl");pm.classList.remove("on","off");pm.disabled=false;
@@ -207,9 +208,23 @@ $("#addBtn").onclick=openAdd;$("#addBtn2").onclick=openAdd;
 /* ===== Thêm / sửa sự kiện (form) ===== */
 const radio=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const setRadio=(n,v)=>{document.querySelector(`input[name=${n}][value=${v}]`).checked=true};
+function numberEvSpots(){document.querySelectorAll("#evSpots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Địa điểm "+(i+1))}
+function addEvSpot(s){s=s||{};const d=document.createElement("div");d.className="spot";
+  d.innerHTML=`<div class="spot-h"><b></b><button type="button" class="pill sm danger" data-sx>Xoá</button></div>
+<label>Tên địa điểm<input class="en" maxlength="80" placeholder="Ví dụ: Trung tâm Văn Hóa A"></label>
+<label>Link Google (bản đồ)<input class="eu" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>`;
+  d.querySelector(".en").value=s.n||"";d.querySelector(".eu").value=s.u||"";
+  d.querySelector("[data-sx]").onclick=()=>{d.remove();numberEvSpots()};$("#evSpots").append(d);numberEvSpots();return d}
+function readEvSpots(){const out=[];
+  for(const d of document.querySelectorAll("#evSpots .spot")){const n=d.querySelector(".en").value.trim();let u=d.querySelector(".eu").value.trim();
+    if(!n&&!u)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u))throw new Error("Link Google không hợp lệ: "+u);
+    out.push({n,u})}
+  return out}
+$("#evSpotAdd").onclick=()=>addEvSpot().querySelector(".en").focus();
 function readForm(){let a=+$("#fA").value,b=+$("#fB").value;if(!a||!b)return null;
   const cal=radio("cal"),rp=radio("rep"),mx=cal==="s"?31:30;if(b<a)[a,b]=[b,a];a=Math.min(Math.max(a,1),mx);b=Math.min(Math.max(b,1),mx);
-  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m:+$("#fM").value,a,b,repeat:rp!=="o",every:rp==="t"?2:1,year:rp==="y"?null:(+$("#fY").value||now.getFullYear()),time:$("#fT").value,note:$("#fC").value.trim()}}
+  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m:+$("#fM").value,a,b,repeat:rp!=="o",every:rp==="t"?2:1,year:rp==="y"?null:(+$("#fY").value||now.getFullYear()),time:$("#fT").value,note:$("#fC").value.trim(),spots:(()=>{try{return readEvSpots()}catch{return []}})()}}
 function syncForm(){const rp=radio("rep"),cal=radio("cal"),cn=cal==="l"?"âm lịch":"dương lịch";
   $("#fYw").hidden=rp==="y";$("#fYl").textContent=rp==="t"?`Năm diễn ra (${cn}), lặp lại mỗi 2 năm`:"Năm "+cn;$("#fA").max=$("#fB").max=cal==="s"?31:30;
   const e=readForm(),p=$("#fP");p.textContent="";if(!e)return;
@@ -217,14 +232,14 @@ function syncForm(){const rp=radio("rep"),cal=radio("cal"),cn=cal==="l"?"âm l�
     const pre=e.repeat?"Lần tới: ":"Ngày: ";
     if(cal==="l")p.textContent=pre+"dương lịch "+fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"");
     else{const l=toLunar(o.s.getDate(),o.s.getMonth()+1,o.s.getFullYear());p.textContent=pre+"âm lịch "+l.d+"/"+l.m+" (ngày bắt đầu)"}}catch{}}
-function resetForm(){editing=null;$("#evF").reset();$("#fY").value=now.getFullYear();$("#fSave").textContent="Lưu sự kiện";$("#fTitle").textContent="Thêm sự kiện mới";syncForm()}
+function resetForm(){editing=null;$("#evF").reset();$("#fY").value=now.getFullYear();$("#fSave").textContent="Lưu sự kiện";$("#fTitle").textContent="Thêm sự kiện mới";$("#evSpots").innerHTML="";syncForm()}
 $("#fReset").onclick=resetForm;
 $("#evF").addEventListener("input",syncForm);$("#evF").addEventListener("change",syncForm);
 function editEvent(id){const e=events.find(x=>x.id===id);if(!e)return;editing=e.id;
-  $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",!e.repeat?"o":e.every===2?"t":"y");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";
+  $("#fN").value=e.name;setRadio("cal",e.cal);setRadio("rep",!e.repeat?"o":e.every===2?"t":"y");$("#fM").value=e.m;$("#fA").value=e.a;$("#fB").value=e.b;$("#fY").value=e.year||now.getFullYear();$("#fT").value=e.time||"";$("#fC").value=e.note||"";$("#evSpots").innerHTML="";(e.spots||[]).forEach(addEvSpot);
   $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";syncForm()}
 $("#evF").onsubmit=async ev=>{ev.preventDefault();const o=readForm();if(!o||!o.name)return;
-  try{await mutate("events","upsert",o);ed.close();resetForm();renderAll()}catch(e){alert(e.message)}};
+  try{o.spots=readEvSpots();await mutate("events","upsert",o);ed.close();resetForm();renderAll()}catch(e){alert(e.message)}};
 
 /* ===== Trang "Tất cả các sự kiện" (quản lý: xem, sửa, xoá, tìm kiếm, sao lưu) ===== */
 const nrm=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d");
@@ -253,7 +268,7 @@ function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
   let when="Đã qua";if(o){const dd=diffD(o.s,T0);when=fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+` (${dd<=0?"đang diễn ra":"còn "+dd+" ngày"})`}
   let lu="";if(e.cal==="s"&&o){const l=toLunar(o.s.getDate(),o.s.getMonth()+1,o.s.getFullYear());lu=row("Âm lịch",`${l.d}/${l.m} (ngày bắt đầu)`)}
   $("#vdN").textContent=e.name;
-  $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
+  $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+((e.spots||[]).length?row("Địa điểm",spotsHtml(e)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
   $("#vdGcal").hidden=!/android/i.test(navigator.userAgent);vd.showModal()}
 /* Thêm lời nhắc vào ứng dụng Lịch của điện thoại (file .ics có nhắc trước 7 ngày, 3 ngày và đúng ngày) */
 const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
@@ -264,9 +279,9 @@ function eventOccs(e,max=5){const out=[],Y=now.getFullYear();
   return out.sort((a,b)=>a.s-b.s)}
 function endHM(e){const[h,m]=e.time.split(":").map(Number);return h>=23?"2359":pad(h+1)+pad(m)}
 function makeIcs(e){const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Lich Su Kien//VI","CALSCALE:GREGORIAN","METHOD:PUBLISH"],stamp=new Date().toISOString().replace(/[-:]|\.\d{3}/g,"");
-  const desc=icsEsc(dateTxt(e)+" · "+repTxt(e)+(e.note?"\n"+e.note:""));
+  const sp=e.spots||[],desc=icsEsc(dateTxt(e)+" · "+repTxt(e)+sp.map(s=>"\nĐịa điểm: "+s.n+(s.u?" - "+s.u:"")).join("")+(e.note?"\n"+e.note:""));
   eventOccs(e).forEach((o,i)=>{const tm=tmOk(e),end=new Date(o.en.getFullYear(),o.en.getMonth(),o.en.getDate()+1);
-    L.push("BEGIN:VEVENT",`UID:${e.id}-${ymd(o.s)}@lich-su-kien.vercel.app`,"DTSTAMP:"+stamp,"SUMMARY:"+icsEsc(e.name),"DESCRIPTION:"+desc,
+    L.push("BEGIN:VEVENT",`UID:${e.id}-${ymd(o.s)}@lich-su-kien.vercel.app`,"DTSTAMP:"+stamp,"SUMMARY:"+icsEsc(e.name),"DESCRIPTION:"+desc,...(sp[0]&&sp[0].n?["LOCATION:"+icsEsc(sp[0].n)]:[]),
       tm?`DTSTART:${ymd(o.s)}T${e.time.replace(":","")}00`:`DTSTART;VALUE=DATE:${ymd(o.s)}`,
       tm?`DTEND:${ymd(o.en)}T${endHM(e)}00`:`DTEND;VALUE=DATE:${ymd(end)}`);
     [[tm?"-P7D":"-P6DT15H","Còn 7 ngày: "],[tm?"-P3D":"-P2DT15H","Còn 3 ngày: "],[tm?"PT0S":"PT8H","Hôm nay: "]].forEach(([tr,pre])=>L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(pre+e.name),"TRIGGER:"+tr,"END:VALARM"));
@@ -275,7 +290,7 @@ function makeIcs(e){const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Lich Su 
 function gcalUrl(e){const o=eventOccs(e,1)[0];if(!o)return null;const tm=tmOk(e),end=new Date(o.en.getFullYear(),o.en.getMonth(),o.en.getDate()+1);
   const d=tm?`${ymd(o.s)}T${e.time.replace(":","")}00/${ymd(o.en)}T${endHM(e)}00`:`${ymd(o.s)}/${ymd(end)}`;
   const rec=e.repeat&&e.cal==="s"?"&recur="+encodeURIComponent("RRULE:FREQ=YEARLY"+(e.every===2?";INTERVAL=2":"")):"";
-  return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.name)}&dates=${d}&details=${encodeURIComponent(dateTxt(e)+(e.note?"\n"+e.note:""))}${rec}`}
+  return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.name)}&dates=${d}&details=${encodeURIComponent(dateTxt(e)+((e.spots||[]).map(s=>"\nĐịa điểm: "+s.n+(s.u?" - "+s.u:"")).join(""))+(e.note?"\n"+e.note:""))}${(e.spots||[])[0]&&e.spots[0].n?"&location="+encodeURIComponent(e.spots[0].n):""}${rec}`}
 $("#vdIcs").onclick=()=>{const e=events.find(x=>x.id===vdId);if(!e)return;
   if(!eventOccs(e,1).length)return alert("Sự kiện này đã kết thúc, không còn ngày sắp tới để nhắc.");
   const a=document.createElement("a");a.href="data:text/calendar;charset=utf-8,"+encodeURIComponent(makeIcs(e));
@@ -283,7 +298,7 @@ $("#vdIcs").onclick=()=>{const e=events.find(x=>x.id===vdId);if(!e)return;
 $("#vdGcal").onclick=()=>{const e=events.find(x=>x.id===vdId),u=e&&gcalUrl(e);if(u)window.open(u,"_blank","noopener");else alert("Sự kiện này đã kết thúc.")};
 $("#vdEdit").onclick=()=>auth(()=>{vd.close();resetForm();editEvent(vdId);ed.showModal()});
 $("#vdDel").onclick=()=>auth(async()=>{if(confirm("Xoá sự kiện này?")){try{await mutate("events","delete",{id:vdId});vd.close();renderAll()}catch(e){alert(e.message)}}});
-document.addEventListener("click",ev=>{const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
+document.addEventListener("click",ev=>{if(ev.target.closest("a"))return;const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
 /* ===== Tiện ích: tải lại trang, dọn dữ liệu rác cũ trên máy ===== */

@@ -13,7 +13,7 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, nhắc trướ
 - Nút **Tạo Icon Màn Hình** ở cuối trang hướng dẫn / kích hoạt thêm icon ra màn hình điện thoại.
 
 - Chuông thông báo hiện số sự kiện trong 7 ngày tới; nếu đã thêm app ra màn hình, số này hiện trên icon (khi thiết bị hỗ trợ).
-- Nút **Thêm lời nhắc (Lịch)** trong chi tiết sự kiện: tạo file .ics có nhắc trước 7 ngày, 3 ngày và đúng ngày (Android có thêm nút Google Calendar).
+- Nút **Thêm lời nhắc (Lịch)** trong chi tiết sự kiện: tạo file .ics có nhắc trước 3 ngày, trước 1 ngày (8h sáng) và trước giờ diễn ra 1 tiếng (không có giờ: nhắc lúc 5h sáng) (Android có thêm nút Google Calendar).
 
 - Sự kiện có thể thêm nhiều **địa điểm** (tên + link Google); hiện dạng "Tên - Đường Đi" phía trên ghi chú, không thêm thì không hiện. (Địa điểm của sự kiện)
 

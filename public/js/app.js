@@ -284,7 +284,10 @@ function makeIcs(e){const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Lich Su 
     L.push("BEGIN:VEVENT",`UID:${e.id}-${ymd(o.s)}@lich-su-kien.vercel.app`,"DTSTAMP:"+stamp,"SUMMARY:"+icsEsc(e.name),"DESCRIPTION:"+desc,...(sp[0]&&sp[0].n?["LOCATION:"+icsEsc(sp[0].n)]:[]),
       tm?`DTSTART:${ymd(o.s)}T${e.time.replace(":","")}00`:`DTSTART;VALUE=DATE:${ymd(o.s)}`,
       tm?`DTEND:${ymd(o.en)}T${endHM(e)}00`:`DTEND;VALUE=DATE:${ymd(end)}`);
-    [[tm?"-P7D":"-P6DT15H","Còn 7 ngày: "],[tm?"-P3D":"-P2DT15H","Còn 3 ngày: "],[tm?"PT0S":"PT8H","Hôm nay: "]].forEach(([tr,pre])=>L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(pre+e.name),"TRIGGER:"+tr,"END:VALARM"));
+    (()=>{const sm=tm?+e.time.slice(0,2)*60+ +e.time.slice(3,5):0,dur=m=>`-P${Math.floor(m/1440)}DT${Math.floor(m%1440/60)}H${m%60}M`;
+      /* Nhắc lúc 8h sáng của ngày cách 3 ngày và 1 ngày; nhắc trước 1 tiếng (không có giờ: tính 6h sáng, nhắc lúc 5h) */
+      return tm?[[dur(3*1440+sm-480),"Còn 3 ngày: "],[dur(1440+sm-480),"Còn 1 ngày: "],["-PT1H","Còn 1 giờ: "]]
+               :[["-P2DT16H","Còn 3 ngày: "],["-PT16H","Còn 1 ngày: "],["PT5H","Sắp diễn ra (6h sáng): "]]})().forEach(([tr,pre])=>L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(pre+e.name),"TRIGGER:"+tr,"END:VALARM"));
     L.push("END:VEVENT")});
   L.push("END:VCALENDAR");return L.join("\r\n")}
 function gcalUrl(e){const o=eventOccs(e,1)[0];if(!o)return null;const tm=tmOk(e),end=new Date(o.en.getFullYear(),o.en.getMonth(),o.en.getDate()+1);

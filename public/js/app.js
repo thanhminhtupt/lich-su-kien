@@ -371,7 +371,7 @@ function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.t
   <div class="btns">${adm?`<button class="pill sm filled blue" data-merge="${esc(s.id)}">Đưa vào địa điểm</button><button class="pill sm" data-dismiss="${esc(s.id)}">Bỏ qua</button>`:`<span class="chip pend">Đang chờ quản trị viên xem</span>`}</div></div>`}
 function renderReview(){if($("#revPage").hidden)return;const adm=isAdmin(),box=$("#revList");
   if(!me){box.innerHTML=`<div class="empty">Hãy đăng nhập để xem mục này.</div>`;return}
-  $("#revTitle").textContent=adm?"Cần duyệt":"Bài gửi của tôi";
+  $("#revTitle").textContent=adm?"Cần duyệt":"Bài gửi của tôi";$("#admTools").hidden=!adm;
   $("#revNote").textContent=adm?"Lịch và địa điểm do thành viên gửi chỉ hiển thị sau khi bạn duyệt. Góp ý được đính kèm vào địa điểm để bạn cập nhật.":"Các lịch và địa điểm bạn gửi đang chờ quản trị viên duyệt. Bạn sẽ nhận thông báo khi được duyệt.";
   const pe=events.filter(e=>e.status==="pending"),pp=places.filter(p=>p.status==="pending");
   const evRow=e=>`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${dateTxt(e)} · ${esc(repTxt(e))}${e.time?" · "+e.time:""}</small>${e.note?`<small>${esc(e.note)}</small>`:""}${byLine(e)}</div><div class="acts">${adm?`<button class="pill sm filled green" data-ok="events:${esc(e.id)}">Duyệt</button><button class="pill sm danger" data-no="events:${esc(e.id)}">Từ chối</button>`:""}<button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button>${adm?"":e.delReq?'<span class="chip pend">Đã gửi yêu cầu xoá</span>':`<button class="pill sm danger" data-rq="events:${esc(e.id)}">Yêu cầu xoá</button>`}</div></div>`;
@@ -454,7 +454,18 @@ document.addEventListener("click",ev=>{if(ev.target.closest("a,button:not([data-
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
 /* ===== Tiện ích ===== */
-$("#reloadBtn").onclick=()=>location.reload();
+$("#reloadBtn").onclick=()=>{$("#reloadBtn").classList.add("spin");location.reload()};
+/* ===== Giao diện Sáng / Tối / Auto: bật/tắt các khối CSS "chế độ tối" theo lựa chọn ===== */
+const darkRules=[];
+try{for(const sh of document.styleSheets){let rs;try{rs=sh.cssRules}catch{continue}for(const r of rs)if(r.media&&/prefers-color-scheme:\s*dark/.test(r.media.mediaText))darkRules.push([r,r.media.mediaText])}}catch{}
+function setTheme(t){t=t==="light"||t==="dark"?t:"auto";ls.set("lich-theme",t);
+  for(const[r,orig]of darkRules){try{r.media.mediaText=t==="auto"?orig:t==="dark"?"all":"not all"}catch{}}
+  const de=document.documentElement;de.style.colorScheme=t==="auto"?"light dark":t;de.dataset.theme=t;
+  const dark=t==="dark"||(t==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
+  $$('meta[name="theme-color"]').forEach(m=>{m.content=dark?"#000000":"#f2f2f7";m.removeAttribute("media")});
+  $$("#themeSeg button").forEach(b=>{b.classList.toggle("on",b.dataset.th===t);b.setAttribute("aria-pressed",b.dataset.th===t)})}
+$$("#themeSeg button").forEach(b=>b.onclick=()=>setTheme(b.dataset.th));
+setTheme(ls.get("lich-theme")||"auto");
 function cleanJunk(){["lich-wx-v1","lich-g-off","lich-asked-old","lich-sent-v1","lich-notif-off","lich-asked","lich-mode","lich-v","lich-events-v1-init"].forEach(ls.del)}
 $("#cleanBtn").onclick=async()=>{
   if(!confirm("Xoá dữ liệu rác cũ trên máy này (dữ liệu thời tiết cũ, bản ghi nhắc cũ, bộ nhớ đệm cũ)?\n(Sự kiện, địa điểm và đăng nhập không bị ảnh hưởng.)"))return;
@@ -502,7 +513,7 @@ function renderPlaces(){const q=nrm($("#pSearch").value.trim()),adm=isAdmin();
   $("#pAdd").textContent=me&&!adm?"+ Gửi địa điểm mới":"+ Thêm địa điểm";
   $("#pProvs").innerHTML=keys.length>1?`<button type="button" class="pv-chip${provF?"":" on"}" data-prov="0">Tất cả <b>${M.length}</b></button>`+keys.map(k=>`<button type="button" class="pv-chip${provF===k?" on":""}" data-prov="${k}">${k?esc(provName(k)):"Chưa chọn tỉnh"} <b>${groups.get(k).length}</b></button>`).join(""):"";
   $("#pList").innerHTML=M.length?keys.filter(k=>!provF||k===provF).map(k=>{const L=groups.get(k).sort((a,b)=>(a.sub||"").localeCompare(b.sub||"","vi")||byName(a,b));
-    const open=!!q||provF===k||!pClosed.has(k),subs=k&&PROV[k-1][1];
+    const open=!!q||(!!provF&&provF===k)||!pClosed.has(k),subs=k&&PROV[k-1][1];
     let body;if(subs){const bySub=new Map();for(const p of L){const sk=p.sub||"";if(!bySub.has(sk))bySub.set(sk,[]);bySub.get(sk).push(p)}
       const order=[...subs,""].filter(x=>bySub.has(x));body=order.map(sk=>`<div class="psub"><div class="psh">${sk?esc(sk):"Chưa chọn khu vực"}<span>${bySub.get(sk).length}</span></div><div class="plist">${bySub.get(sk).map(p=>placeRow(p,adm)).join("")}</div></div>`).join("")}
     else body=`<div class="plist">${L.map(p=>placeRow(p,adm)).join("")}</div>`;

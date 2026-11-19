@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
-<link rel="stylesheet" href="/css/styles.css?v=2.3.2">
+<link rel="stylesheet" href="/css/styles.css?v=2.3.3">
 </head>
 <body>
 <header class="hdr">
@@ -51,10 +51,14 @@
   <button class="pill filled red" id="addBtn">+ Thêm sự kiện</button>
   <button class="pill orange" id="reviewBtn" hidden>Cần duyệt <span class="cnt0" id="reviewN">0</span></button>
   <div class="stor" id="stor" aria-live="polite"></div>
+  <span class="sp"></span>
+  <div class="theme seg tabs" id="themeSeg" role="radiogroup" aria-label="Giao diện"><button type="button" data-th="light">☀︎ Sáng</button><button type="button" data-th="dark">☾ Tối</button><button type="button" data-th="auto">Auto</button></div>
 </div>
+<button class="fab" id="reloadBtn" title="Tải lại trang / cập nhật dữ liệu" aria-label="Tải lại trang"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 
 <main class="layout" id="mainView">
   <section class="card today" aria-label="Hôm nay">
+    <a class="wx" href="https://www.google.com/search?q=thoi+tiet+h%C3%B4m+nay" target="_blank" rel="noopener noreferrer" title="Thời tiết hôm nay" aria-label="Thời tiết hôm nay"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3.6" fill="#ffd60a"/><path d="M9 2.6v1.6M2.6 9h1.6M4.5 4.5l1.1 1.1M13.5 4.5l-1.1 1.1" stroke="#ffd60a" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .4-6.97A4.6 4.6 0 0 0 9 13a3.2 3.2 0 0 0-.5 6.5Z" fill="#fff" stroke="#cfe3ff" stroke-width="1.2" stroke-linejoin="round"/></svg><span>Thời tiết</span></a>
     <div class="t1">
       <div class="hello" id="hello"></div>
       <div class="wd" id="wd"></div>
@@ -63,15 +67,6 @@
     <div class="lunar" id="lunar"></div>
   </section>
 
-  <div class="strip">
-    <a class="wlink" href="https://www.google.com/search?q=thoi+tiet+h%C3%B4m+nay" target="_blank" rel="noopener noreferrer">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3.6" fill="#ffcc00"/><path d="M9 2.6v1.6M2.6 9h1.6M4.5 4.5l1.1 1.1M13.5 4.5l-1.1 1.1" stroke="#ffcc00" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .4-6.97A4.6 4.6 0 0 0 9 13a3.2 3.2 0 0 0-.5 6.5Z" fill="#fff" stroke="#64a0ff" stroke-width="1.5" stroke-linejoin="round"/></svg>
-      <span>Thời tiết hôm nay</span><span class="ext" aria-hidden="true">↗</span>
-    </a>
-    <span class="sp"></span>
-    <button class="pill yellow" id="reloadBtn">Load lại trang</button>
-    <button class="pill danger" id="cleanBtn">Xoá dữ liệu rác cũ</button>
-  </div>
 
   <section class="card cal" aria-label="Lịch tháng">
     <div class="bar">
@@ -92,7 +87,7 @@
   </section>
 
   <section class="card remind" aria-label="Sắp tới">
-    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2><a class="pill purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp qua Zalo</a></div>
+    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
     <div id="notes"></div>
     <div class="more" id="notesMore"></div>
     <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
@@ -150,6 +145,7 @@
     <div class="sec-h"><button class="pill" id="revBack">‹ Quay lại</button></div>
     <h2 class="ptitle" id="revTitle">Cần duyệt</h2>
     <div class="note" id="revNote"></div>
+    <div class="admtools" id="admTools" hidden><h3 class="sub">Công cụ quản trị</h3><div class="btns"><button class="pill danger" id="cleanBtn">Xoá dữ liệu rác cũ</button></div><div class="note sm">Dọn dữ liệu tạm cũ và bộ nhớ đệm trên máy này. Không ảnh hưởng sự kiện, địa điểm và tài khoản.</div></div>
     <div id="revList"></div>
   </div>
 </section>
@@ -158,7 +154,7 @@
   <div class="visits" id="visits" aria-label="Lượt truy cập"></div>
   <div>Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
   <div id="sync"></div>
-  <div class="ver">Phiên bản 2.3.2</div>
+  <div class="ver">Phiên bản 2.3.3</div>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -317,6 +313,6 @@
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
 </div></dialog>
 
-<script src="/js/app.js?v=2.3.2" defer></script>
+<script src="/js/app.js?v=2.3.3" defer></script>
 </body>
 </html>

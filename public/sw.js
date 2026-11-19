@@ -1,5 +1,5 @@
 /* Service worker: chạy ngoại tuyến + nhận thông báo đẩy và đặt số trên icon app */
-const V="lich-v232",SHELL=["/","/css/styles.css?v=2.3.2","/js/app.js?v=2.3.2","/manifest.webmanifest","/assets/icon.svg","/assets/icon-192.png","/assets/icon-180.png","/assets/qr.svg"];
+const V="lich-v233",SHELL=["/","/css/styles.css?v=2.3.3","/js/app.js?v=2.3.3","/manifest.webmanifest","/assets/icon.svg","/assets/icon-192.png","/assets/icon-180.png","/assets/qr.svg"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener("fetch",e=>{

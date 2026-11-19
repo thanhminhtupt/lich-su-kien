@@ -352,3 +352,80 @@ dialog{margin:auto}
 @media(max-width:560px){dialog{margin:auto 0 0}
   .hdr-in{flex-wrap:nowrap}.brand{flex:1 1 auto}.ttl{min-width:0}h1{font-size:1.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .logo{width:34px;height:34px;border-radius:8px}.hr{gap:6px;flex:none}.hdr .pill{min-height:38px;padding:6px 12px}.bell{width:40px;min-height:40px}.avatar{width:36px;height:36px;min-height:36px}}
+/* Góp ý: nút nhanh trên dòng địa điểm + khung mời góp ý */
+details.pd summary .sgq{flex:none;min-height:34px;padding:4px 12px;border-radius:999px;font-size:.88rem;background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue)}
+.sgcta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--blue) 9%,transparent)}
+.sgcta>div{display:grid;flex:1 1 200px}.sgcta span{color:var(--mute);font-size:.92rem}
+.sgplace{background:var(--fill2);border-radius:14px;padding:10px 12px;max-height:200px;overflow:auto}
+.sgph{margin-bottom:4px}
+
+/* ===== Bản 2.2: màu tươi hơn, nút dạng viên thuốc kiểu iOS mới, gọn gàng ===== */
+:root{--brand:#078f06;--green:#0b9d0ae0;--dayblue:#007affc7;--hot:#ff0000}
+@media(prefers-color-scheme:dark){:root{--brand:#078f06;--green:#0b9d0ae0;--dayblue:#007affc7;--hot:#ff3b30}}
+/* Nút: dạng viên (capsule), nền màu trong suốt + viền sáng mảnh, cỡ vừa phải */
+button,.pill{min-height:40px;padding:8px 16px;border-radius:999px;font-size:.98rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 1px 2px rgba(0,0,0,.06);border:.5px solid rgba(255,255,255,.35)}
+button.sm,.pill.sm{min-height:32px;padding:4px 12px;border-radius:999px;font-size:.9rem}
+.pill.filled{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 8px color-mix(in srgb,currentColor 0%,rgba(0,0,0,.12));text-shadow:0 1px 0 rgba(0,0,0,.08)}
+.pill.filled.blue{background:linear-gradient(180deg,#2b8cff,#007aff)}
+.pill.filled.red{background:linear-gradient(180deg,#ff3b30,#ff0000)}
+.pill.filled.green{background:linear-gradient(180deg,#14b513,#078f06)}
+.pill.primary{background:color-mix(in srgb,#007aff 18%,transparent);color:#0066e0}
+.pill.green{background:color-mix(in srgb,#0b9d0a 18%,transparent);color:#067a05}
+.pill.orange{background:color-mix(in srgb,#ff9500 22%,transparent);color:#c25e00}
+.pill.yellow{background:color-mix(in srgb,#ffcc00 32%,transparent);color:#8a5a00}
+.pill.purple{background:color-mix(in srgb,#af52de 18%,transparent);color:#8e2fc0}
+.pill.danger{background:color-mix(in srgb,#ff0000 14%,transparent);color:#e00000}
+@media(prefers-color-scheme:dark){.pill.primary{color:#5aa9ff}.pill.green{color:#4cd964}.pill.orange{color:#ffb340}.pill.yellow{color:#ffd60a}.pill.purple{color:#d08cff}.pill.danger{color:#ff6961}}
+button.ic{width:40px;border-radius:50%}
+.bell{border-radius:50%}
+.pill.big{min-height:46px;border-radius:999px}
+.inst .pill,.pbtns .pill{width:auto;justify-self:start}
+.pill.full{width:100%}
+.tabs button,.seg span{border-radius:999px}
+fieldset.seg label:first-of-type{border-radius:999px 0 0 999px}fieldset.seg label:last-of-type{border-radius:0 999px 999px 0}
+.seg,.tabs{border-radius:999px}
+.tabs button{box-shadow:none;border:0}
+
+/* Màu chính */
+.today{background:var(--brand)}
+.cnt,.dt{background:var(--dayblue)}
+.rem.now .cnt{background:var(--green)}
+.rem.w3 .cnt{background:#ff9500}
+.dt{background:#ff2d55}
+.chip.d{background:color-mix(in srgb,var(--hot) 12%,transparent);color:var(--hot)}
+.chip.t-y,.tag.t-y{background:color-mix(in srgb,#0b9d0a 18%,transparent);color:#067a05}
+.chip.t-o,.tag.t-o{background:color-mix(in srgb,#ff9500 22%,transparent);color:#c25e00}
+.chip.t-t,.tag.t-t{background:color-mix(in srgb,#af52de 18%,transparent);color:#8e2fc0}
+@media(prefers-color-scheme:dark){.chip.t-y,.tag.t-y{color:#4cd964}.chip.t-o,.tag.t-o{color:#ffb340}.chip.t-t,.tag.t-t{color:#d08cff}}
+.tag{background:color-mix(in srgb,#007aff 12%,transparent);color:#0066e0}
+/* Chữ ngày nổi bật */
+.rb small.dl,.eb small.dl{color:var(--text);font-weight:600}
+.rb small.dl b,.eb small.dl b{color:#0066e0}
+@media(prefers-color-scheme:dark){.rb small.dl b,.eb small.dl b{color:#5aa9ff}}
+.detail .tag{font-weight:700}
+.day.tdy .s{background:#ff0000}
+.day.ev{background:color-mix(in srgb,#ff9500 16%,transparent)}
+.lun{color:#e65c00}
+
+/* Thông báo trên điện thoại (trong mục QR) */
+.pushc{margin-top:14px;padding-top:14px;border-top:.5px solid var(--line);display:grid;gap:8px}
+.pushc .ph{margin:0;font-size:1.05rem}
+.pushc .pstat{margin:0;font-size:.95rem}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.two-b{display:flex;flex-wrap:wrap;gap:8px}
+.two-b .pill{min-height:40px}
+.pdev{margin-top:2px;font-size:.88rem}
+
+/* Lượt truy cập có màu */
+.visits .vt{border-radius:16px}
+.visits .vt:nth-child(2){background:color-mix(in srgb,#007aff 13%,transparent)}.visits .vt:nth-child(2) b{color:#007aff}
+.visits .vt:nth-child(3){background:color-mix(in srgb,#0b9d0a 14%,transparent)}.visits .vt:nth-child(3) b{color:#0b9d0a}
+.visits .vt:nth-child(4){background:color-mix(in srgb,#ff9500 16%,transparent)}.visits .vt:nth-child(4) b{color:#ff8000}
+.visits .vt:nth-child(5){background:color-mix(in srgb,#af52de 14%,transparent)}.visits .vt:nth-child(5) b{color:#a033d6}
+.visits .vt b{font-size:1.4rem;font-weight:800}
+.pill.filled,.pill.filled.green,.pill.filled.blue,.pill.filled.red{color:#fff}
+.day,.mi,.rem,button.link,.revcta,.banner .x{box-shadow:none;border:0}
+.day{border-radius:14px;min-height:58px;padding:3px 0}
+.mi,.rem{border-radius:16px;padding:10px 12px}
+.revcta{border-radius:16px}
+.day.sel{box-shadow:inset 0 0 0 2px #007aff}

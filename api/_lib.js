@@ -64,7 +64,7 @@ const pwOk=(u,pw)=>u.pwEnv?eq(pw,process.env.ADMIN_PASSWORD||(MEM?"admin123":"")
 function setPw(u,pw){u.salt=crypto.randomBytes(16).toString("hex");u.hash=hashPw(pw,u.salt);delete u.pwEnv;return u}
 async function getUser(uid){if(!uid)return null;const v=await redis(["HGET",UKEY,uid]);if(v)try{return JSON.parse(v)}catch{}
   /* Tài khoản quản trị "admin" tự tạo lần đầu, mật khẩu = ADMIN_PASSWORD cho tới khi đổi */
-  if(uid==="admin")return{uid:"admin",name:"Quản trị viên",email:str(process.env.ADMIN_EMAIL,120).toLowerCase(),role:"admin",pwEnv:true,at:Date.now()};
+  if(uid==="admin")return{uid:"admin",name:"Quản trị viên",email:str(process.env.ADMIN_EMAIL||"ducanhitpt@gmail.com",120).toLowerCase(),role:"admin",pwEnv:true,at:Date.now()};
   return null}
 const saveUser=u=>redis(["HSET",UKEY,u.uid,JSON.stringify(u)]);
 async function allUsers(){const o=await hgetall(UKEY),L=[];for(const k in o)try{L.push(JSON.parse(o[k]))}catch{}

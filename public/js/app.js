@@ -163,7 +163,7 @@ function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
   const first=new Date(vy,vm,1),last=new Date(vy,vm,n),cut=T0<first?0:T0>last?n+1:T0.getDate();
   const all=[...mp.values()],L=all.filter(r=>r.l>=cut).sort((a,b)=>a.f-b.f),box=$("#mList");
-  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}" data-ev="${esc(r.e.id)}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small>${dateTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small><span class="chips">${repChip(r.e)}<span class="chip d">${(()=>{const dd=diffD(new Date(vy,vm,r.f),T0);return dd>0?"Còn "+dd+" ngày":r.l>r.f||dd<0?"Đang diễn ra":"Hôm nay"})()}</span></span></span></button>`).join(""):`<div class="empty">${all.length?"Các sự kiện trong tháng này đã qua.":"Tháng này chưa có sự kiện."}</div>`;
+  box.innerHTML=L.length?L.map(r=>`<button class="mi" data-d="${r.f}" data-ev="${esc(r.e.id)}"><span class="dt"><b>${r.f}</b>${r.l>r.f?`<small>đến ${r.l}</small>`:`<small>/${vm+1}</small>`}</span><span class="rb"><b>${esc(r.e.name)}</b><small class="dl">${dateTxt(r.e)}${r.e.time?" · "+r.e.time:""}</small><span class="chips">${repChip(r.e)}<span class="chip d">${(()=>{const dd=diffD(new Date(vy,vm,r.f),T0);return dd>0?"Còn "+dd+" ngày":r.l>r.f||dd<0?"Đang diễn ra":"Hôm nay"})()}</span></span></span></button>`).join(""):`<div class="empty">${all.length?"Các sự kiện trong tháng này đã qua.":"Tháng này chưa có sự kiện."}</div>`;
   const hl=[];for(let i=Math.max(cut,1);i<=n;i++){const d=new Date(vy,vm,i),h=holiday(d,toLunar(i,vm+1,vy));if(h.length)hl.push(`<div><b>${i}/${vm+1}</b> · ${h.join(", ")}</div>`)}
   if(hl.length)box.insertAdjacentHTML("beforeend",`<div class="hols">${hl.join("")}</div>`);
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sel=new Date(vy,vm,+b.dataset.d);renderCal();renderDetail()})}
@@ -181,7 +181,7 @@ function badgeCount(){return remList().out.length+unreadN()}
 function updateBadge(){const n=badgeCount(),bn=$("#bellN");bn.hidden=!n;bn.textContent=n>99?"99+":n;
   document.title=(n?`(${n}) `:"")+"Lịch Sự Kiện";
   try{if(navigator.setAppBadge){n>0?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{})}}catch{}}
-const remItem=(n)=>{const st=n.run?"now":n.dd<=3?"w3":"w7";return`<div class="rem ${st}" role="button" tabindex="0" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()} · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${spotsHtml(n.e)}${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></div>`};
+const remItem=(n)=>{const st=n.run?"now":n.dd<=3?"w3":"w7";return`<div class="rem ${st}" role="button" tabindex="0" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small class="dl"><b>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()}</b> · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${spotsHtml(n.e)}${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></div>`};
 function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;updateBadge();
   $("#notes").innerHTML=up.length?up.slice(0,10).map(remItem).join("")
     +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`}
@@ -337,45 +337,58 @@ function renderAllPage(){if($("#allPage").hidden)return;const q=nrm($("#aSearch"
   $("#aCount").textContent=q?`${L.length}/${evA.length}`:evA.length;
   const box=$("#aList");
   box.innerHTML=L.length?L.map(({e,o})=>{const dd=o?diffD(o.s,T0):0,chip=!o?"Đã qua":dd<=0?"Đang diễn ra":"Còn "+dd+" ngày";
-    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${o?fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+" (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="chips">${repChip(e,"tag")}<span class="chip d">${chip}</span></span></div>${adm?`<div class="acts"><button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button><button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button></div>`:""}</div>`}).join("")
+    return`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small class="dl">${o?"<b>"+fmtY(o.s)+(o.en>o.s?" – "+fmtY(o.en):"")+"</b> (dương lịch)":"Đã kết thúc"} · ${dateTxt(e)}${e.time?" · "+e.time:""}</small><span class="chips">${repChip(e,"tag")}<span class="chip d">${chip}</span></span></div>${ownActs(e,"events")}</div>`}).join("")
     :`<div class="empty">${evA.length?"Không tìm thấy sự kiện phù hợp.":"Chưa có sự kiện nào."}</div>`;
-  box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{editEvent(b.dataset.e);ed.showModal()});
-  box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>delEvent(b.dataset.d))}
+  bindActs(box)}
 $("#aSearch").addEventListener("input",renderAllPage);
 async function delEvent(id){if(!confirm("Xoá sự kiện này?"))return;try{await mutate("events","delete",{id});vd.close()}catch(e){alert(e.message)}}
 $("#bkBtn").onclick=()=>{const d=new Date(),a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify({xuatLuc:d.toISOString(),events:evA,places:plA},null,2)],{type:"application/json"}));
   a.download=`lich-su-kien-sao-luu-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 
+/* Nút thao tác: quản trị viên Sửa + Xoá; người tạo Sửa + Yêu cầu xoá (thành viên không tự xoá được) */
+function ownActs(x,k){const ev=k==="events",id=esc(x.id);
+  if(isAdmin())return`<div class="acts"><button class="pill sm primary" ${ev?"data-e":"data-pe"}="${id}">Sửa</button><button class="pill sm danger" ${ev?"data-d":"data-pd"}="${id}">Xoá</button></div>`;
+  if(!x.mine)return"";
+  return`<div class="acts"><button class="pill sm primary" ${ev?"data-e":"data-pe"}="${id}">Sửa</button>${x.delReq?'<span class="chip pend">Đã gửi yêu cầu xoá</span>':`<button class="pill sm danger" data-rq="${k}:${id}">Yêu cầu xoá</button>`}</div>`}
+async function reqDelete(k,id){const x=(k==="events"?events:places).find(i=>i.id===id);if(!x)return;
+  const why=prompt(`Gửi yêu cầu xoá "${x.name}" cho quản trị viên.\nLý do (tuỳ chọn):`,"");if(why===null)return;
+  try{apply(await api("store",{op:"reqDelete",kind:k,id,reason:why}));vd.close();toast("Đã gửi yêu cầu xoá. Quản trị viên sẽ xem và xoá giúp bạn.")}catch(e){alert(e.message)}}
+
 /* ===== Trang duyệt bài (quản trị viên) / Bài gửi của tôi (thành viên) ===== */
-function pendingCount(){if(!me)return 0;return events.filter(e=>e.status==="pending").length+places.filter(p=>p.status==="pending").length+(isAdmin()?suggestions.length:0)}
+function pendingCount(){if(!me)return 0;const all=[...events,...places];return all.filter(x=>x.status==="pending"&&(isAdmin()||x.mine)).length+all.filter(x=>x.delReq&&x.status!=="pending").length+(isAdmin()?suggestions.length:0)}
 const plName=id=>{const p=places.find(x=>x.id===id);return p?p.name:"(đã xoá)"};
 const byLine=x=>`<small class="by2">${x.byName?"Gửi bởi <b>"+esc(x.byName)+"</b> · ":""}${x.at?ago(x.at):""}</small>`;
 function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.text):"<i>(không có nội dung)</i>"}</div>${(s.spots||[]).length?'<ul class="spl">'+s.spots.map(x=>`<li><span class="sn2">${esc(x.n||"")}</span>${x.u?` <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}</li>`).join("")+"</ul>":""}${byLine(s)}
-  <div class="btns">${adm?`<button class="pill sm filled blue" data-merge="${esc(s.id)}">Đưa vào địa điểm</button><button class="pill sm" data-dismiss="${esc(s.id)}">Bỏ qua</button>`:`<span class="chip pend">Đang chờ quản trị viên xem</span><button class="pill sm danger" data-dismiss="${esc(s.id)}">Xoá góp ý</button>`}</div></div>`}
+  <div class="btns">${adm?`<button class="pill sm filled blue" data-merge="${esc(s.id)}">Đưa vào địa điểm</button><button class="pill sm" data-dismiss="${esc(s.id)}">Bỏ qua</button>`:`<span class="chip pend">Đang chờ quản trị viên xem</span>`}</div></div>`}
 function renderReview(){if($("#revPage").hidden)return;const adm=isAdmin(),box=$("#revList");
   if(!me){box.innerHTML=`<div class="empty">Hãy đăng nhập để xem mục này.</div>`;return}
   $("#revTitle").textContent=adm?"Cần duyệt":"Bài gửi của tôi";
   $("#revNote").textContent=adm?"Lịch và địa điểm do thành viên gửi chỉ hiển thị sau khi bạn duyệt. Góp ý được đính kèm vào địa điểm để bạn cập nhật.":"Các lịch và địa điểm bạn gửi đang chờ quản trị viên duyệt. Bạn sẽ nhận thông báo khi được duyệt.";
   const pe=events.filter(e=>e.status==="pending"),pp=places.filter(p=>p.status==="pending");
-  const evRow=e=>`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${dateTxt(e)} · ${esc(repTxt(e))}${e.time?" · "+e.time:""}</small>${e.note?`<small>${esc(e.note)}</small>`:""}${byLine(e)}</div><div class="acts">${adm?`<button class="pill sm filled green" data-ok="events:${esc(e.id)}">Duyệt</button><button class="pill sm danger" data-no="events:${esc(e.id)}">Từ chối</button>`:""}<button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button>${adm?"":`<button class="pill sm danger" data-d="${esc(e.id)}">Xoá</button>`}</div></div>`;
-  const plRow=p=>`<div class="ei col"><div class="eb"><b>${esc(p.name)}</b>${placeBody(p)}${byLine(p)}</div><div class="acts">${adm?`<button class="pill sm filled green" data-ok="places:${esc(p.id)}">Duyệt</button><button class="pill sm danger" data-no="places:${esc(p.id)}">Từ chối</button>`:""}<button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button>${adm?"":`<button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button>`}</div></div>`;
+  const evRow=e=>`<div class="ei"><div class="eb" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><small>${dateTxt(e)} · ${esc(repTxt(e))}${e.time?" · "+e.time:""}</small>${e.note?`<small>${esc(e.note)}</small>`:""}${byLine(e)}</div><div class="acts">${adm?`<button class="pill sm filled green" data-ok="events:${esc(e.id)}">Duyệt</button><button class="pill sm danger" data-no="events:${esc(e.id)}">Từ chối</button>`:""}<button class="pill sm primary" data-e="${esc(e.id)}">Sửa</button>${adm?"":e.delReq?'<span class="chip pend">Đã gửi yêu cầu xoá</span>':`<button class="pill sm danger" data-rq="events:${esc(e.id)}">Yêu cầu xoá</button>`}</div></div>`;
+  const plRow=p=>`<div class="ei col"><div class="eb"><b>${esc(p.name)}</b>${placeBody(p)}${byLine(p)}</div><div class="acts">${adm?`<button class="pill sm filled green" data-ok="places:${esc(p.id)}">Duyệt</button><button class="pill sm danger" data-no="places:${esc(p.id)}">Từ chối</button>`:""}<button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button>${adm?"":p.delReq?'<span class="chip pend">Đã gửi yêu cầu xoá</span>':`<button class="pill sm danger" data-rq="places:${esc(p.id)}">Yêu cầu xoá</button>`}</div></div>`;
   const sec=(t,n,body)=>`<h3 class="sub">${t} <span class="badge${n?"":" ok"}">${n}</span></h3>${n?body:'<div class="empty">Không có.</div>'}`;
-  box.innerHTML=sec("Lịch chờ duyệt",pe.length,pe.map(evRow).join(""))+sec("Địa điểm chờ duyệt",pp.length,pp.map(plRow).join(""))+
+  const dr=[...events.filter(e=>e.delReq&&e.status!=="pending").map(e=>["events",e]),...places.filter(p=>p.delReq&&p.status!=="pending").map(p=>["places",p])];
+  const drRow=([k,x])=>`<div class="ei"><div class="eb"${k==="events"?` role="button" tabindex="0" data-ev="${esc(x.id)}"`:""}><b>${k==="events"?"📅":"📍"} ${esc(x.name)}</b><small>${k==="events"?dateTxt(x):"Địa điểm"} · yêu cầu ${ago(x.delReq.at)}</small>${x.delReq.reason?`<small>Lý do: ${esc(x.delReq.reason)}</small>`:""}${byLine(x)}</div><div class="acts">${adm?`<button class="pill sm danger filled red" ${k==="events"?"data-d":"data-pd"}="${esc(x.id)}">Xoá</button><button class="pill sm" data-keep="${k}:${esc(x.id)}">Giữ lại</button>`:'<span class="chip pend">Chờ quản trị viên xoá</span>'}</div></div>`;
+  box.innerHTML=sec(adm?"Yêu cầu xoá":"Yêu cầu xoá của tôi",dr.length,dr.map(drRow).join(""))+sec("Lịch chờ duyệt",pe.length,pe.map(evRow).join(""))+sec("Địa điểm chờ duyệt",pp.length,pp.map(plRow).join(""))+
     sec(adm?"Góp ý cho địa điểm":"Góp ý của tôi",suggestions.length,suggestions.map(s=>`<div class="ei col"><div class="eb"><b>${esc(plName(s.placeId))}</b>${sugHtml(s,adm)}</div></div>`).join(""));
   bindActs(box)}
 function bindActs(box){
   box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{editEvent(b.dataset.e);ed.showModal()});
   box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>delEvent(b.dataset.d));
   box.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>openPlace(places.find(x=>x.id===b.dataset.pe)));
-  box.querySelectorAll("[data-pd]").forEach(b=>b.onclick=async()=>{if(confirm("Xoá địa điểm này?")){try{await mutate("places","delete",{id:b.dataset.pd})}catch(e){alert(e.message)}}});
+  box.querySelectorAll("[data-pd]").forEach(b=>b.onclick=async()=>{if(confirm("Xoá địa điểm này?"+(()=>{const p=places.find(x=>x.id===b.dataset.pd);return p&&p.delReq?" (người tạo đã yêu cầu xoá)":""})())){try{await mutate("places","delete",{id:b.dataset.pd})}catch(e){alert(e.message)}}});
   box.querySelectorAll("[data-ok]").forEach(b=>b.onclick=async()=>{const[k,id]=b.dataset.ok.split(":");b.disabled=true;try{await api("store",{op:"approve",kind:k,id}).then(apply);toast("Đã duyệt. Người gửi đã được thông báo.")}catch(e){alert(e.message);b.disabled=false}});
   box.querySelectorAll("[data-no]").forEach(b=>b.onclick=async()=>{const[k,id]=b.dataset.no.split(":"),why=prompt("Lý do từ chối (tuỳ chọn, sẽ gửi cho người gửi):","");if(why===null)return;
     try{await api("store",{op:"reject",kind:k,id,reason:why}).then(apply);toast("Đã từ chối. Người gửi đã được thông báo.")}catch(e){alert(e.message)}});
   box.querySelectorAll("[data-merge]").forEach(b=>b.onclick=()=>{const s=suggestions.find(x=>x.id===b.dataset.merge),p=s&&places.find(x=>x.id===s.placeId);if(p)openPlace(p,s);else alert("Địa điểm đã bị xoá.")});
   box.querySelectorAll("[data-dismiss]").forEach(b=>b.onclick=async()=>{if(!confirm(isAdmin()?"Bỏ qua góp ý này? Người gửi sẽ được báo là bạn đã xem.":"Xoá góp ý này?"))return;
     try{await api("store",{op:"dismiss",id:b.dataset.dismiss}).then(apply)}catch(e){alert(e.message)}});
-  box.querySelectorAll("[data-sg]").forEach(b=>b.onclick=()=>openSuggest(b.dataset.sg))}
+  box.querySelectorAll("[data-sg]").forEach(b=>b.onclick=ev=>{ev.preventDefault();ev.stopPropagation();openSuggest(b.dataset.sg)});
+  box.querySelectorAll("[data-rq]").forEach(b=>b.onclick=()=>{const[k,id]=b.dataset.rq.split(":");reqDelete(k,id)});
+  box.querySelectorAll("[data-keep]").forEach(b=>b.onclick=async()=>{const[k,id]=b.dataset.keep.split(":"),why=prompt("Giữ lại, không xoá. Lý do (tuỳ chọn, sẽ gửi cho người yêu cầu):","");if(why===null)return;
+    try{apply(await api("store",{op:"keep",kind:k,id,reason:why}));toast("Đã giữ lại. Người yêu cầu đã được thông báo.")}catch(e){alert(e.message)}})}
 $("#revBack").onclick=()=>{location.hash=""};
 
 function route(){const h=location.hash;
@@ -398,7 +411,7 @@ function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
   $("#vdS").innerHTML=pend?`<div class="pendbox"><span class="chip pend">Đang chờ duyệt</span>${e.byName?" Gửi bởi <b>"+esc(e.byName)+"</b>":""}${isAdmin()?`<div class="btns"><button class="pill sm filled green" data-ok="events:${esc(e.id)}">Duyệt</button><button class="pill sm danger" data-no="events:${esc(e.id)}">Từ chối</button></div>`:""}</div>`:"";
   bindActs($("#vdS"));$$("#vdS [data-ok],#vdS [data-no]").forEach(b=>b.addEventListener("click",()=>vd.close()));
   $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+((e.spots||[]).length?row("Địa điểm",spotsHtml(e)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
-  const can=isAdmin()||(pend&&e.mine);$("#vdEdit").hidden=$("#vdDel").hidden=!can;$("#vdRem").hidden=$("#vdHint").hidden=pend;
+  const can=isAdmin()||e.mine;$("#vdEdit").hidden=!can;$("#vdDel").hidden=!can;$("#vdDel").textContent=isAdmin()?"Xoá":e.delReq?"Đã gửi yêu cầu xoá":"Yêu cầu xoá";$("#vdDel").disabled=!isAdmin()&&!!e.delReq;$("#vdRem").hidden=$("#vdHint").hidden=pend;
   $("#vdGcal").hidden=!/android/i.test(navigator.userAgent);vd.showModal()}
 const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
 const icsEsc=s=>String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n");
@@ -428,7 +441,7 @@ $("#vdIcs").onclick=()=>{const e=events.find(x=>x.id===vdId);if(!e)return;
   a.download=(e.name.replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"")||"su-kien")+".ics";document.body.append(a);a.click();a.remove()};
 $("#vdGcal").onclick=()=>{const e=events.find(x=>x.id===vdId),u=e&&gcalUrl(e);if(u)window.open(u,"_blank","noopener");else alert("Sự kiện này đã kết thúc.")};
 $("#vdEdit").onclick=()=>{vd.close();editEvent(vdId);ed.showModal()};
-$("#vdDel").onclick=()=>delEvent(vdId);
+$("#vdDel").onclick=()=>isAdmin()?delEvent(vdId):reqDelete("events",vdId);
 document.addEventListener("click",ev=>{if(ev.target.closest("a,button:not([data-ev])"))return;const t=ev.target.closest("[data-ev]");if(t)showEvent(t.dataset.ev)});
 document.addEventListener("keydown",ev=>{const t=ev.target;if((ev.key==="Enter"||ev.key===" ")&&t.matches&&t.matches("div[data-ev]")){ev.preventDefault();showEvent(t.dataset.ev)}});
 
@@ -455,9 +468,11 @@ function renderPlaces(){const q=nrm($("#pSearch").value.trim()),adm=isAdmin();
   $("#pCount").textContent=q?`${L.length}/${plA.length}`:plA.length;
   $("#pAdd").textContent=me&&!adm?"+ Gửi địa điểm mới":"+ Thêm địa điểm";
   $("#pList").innerHTML=L.length?L.map(p=>{const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · "),sg=suggestions.filter(s=>s.placeId===p.id);
-    return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}`+
+    const canSg=!adm&&!p.mine;
+    return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span>${canSg?`<button type="button" class="sgq" data-sg="${esc(p.id)}" aria-label="Góp ý cho ${esc(p.name)}">💬 Góp ý</button>`:""}</summary><div class="pb">${placeBody(p)}`+
       (sg.length?`<div class="sgs"><div class="sgh">${adm?"Góp ý của thành viên":"Góp ý của bạn"}</div>${sg.map(s=>sugHtml(s,adm)).join("")}</div>`:"")+
-      `<div class="acts">${adm?`<button class="pill sm primary" data-pe="${esc(p.id)}">Sửa</button><button class="pill sm danger" data-pd="${esc(p.id)}">Xoá</button>`:`<button class="pill sm primary" data-sg="${esc(p.id)}">Góp ý thêm cho địa điểm</button>`}</div></div></details>`}).join(""):`<div class="empty">${plA.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+      (canSg?`<div class="sgcta"><div><b>Bạn biết thêm về địa điểm này?</b><span>Góp ý sẽ đính kèm vào địa điểm để quản trị viên cập nhật cho đầy đủ hơn.</span></div><button type="button" class="pill filled blue" data-sg="${esc(p.id)}">💬 Góp ý thêm</button></div>`:"")+
+      (p.byName&&adm?byLine(p):"")+ownActs(p,"places")+`</div></details>`}).join(""):`<div class="empty">${plA.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
   $$("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   bindActs($("#pList"))}
 function numberSpots(){$$("#spots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Vị trí "+(i+1))}
@@ -499,7 +514,7 @@ $("#plF").onsubmit=async ev=>{ev.preventDefault();
 
 /* ===== Góp ý cho địa điểm của quản trị viên ===== */
 const sg=$("#sg");let sgPlace=null;
-function openSuggest(id){requireLogin(()=>{const p=places.find(x=>x.id===id);if(!p)return;sgPlace=id;$("#sgP").textContent=p.name;$("#sgF").reset();$("#sgE").textContent="";sg.showModal();$("#sgT").focus()},"Hãy đăng nhập để gửi góp ý cho địa điểm.")}
+function openSuggest(id){requireLogin(()=>{const p=places.find(x=>x.id===id);if(!p)return;sgPlace=id;$("#sgP").textContent=p.name;$("#sgPrev").innerHTML=placeBody(p);$("#sgF").reset();$("#sgE").textContent="";sg.showModal();$("#sgT").focus()},"Hãy đăng nhập để gửi góp ý cho địa điểm.")}
 $("#sgF").onsubmit=async ev=>{ev.preventDefault();const text=$("#sgT").value.trim(),n=$("#sgN").value.trim();let u=$("#sgU").value.trim();
   if(u&&!/^https?:\/\//i.test(u))u="https://"+u;if(!text&&!n&&!u){$("#sgE").textContent="Hãy nhập nội dung góp ý.";return}
   try{apply(await api("store",{op:"suggest",placeId:sgPlace,text,spots:n||u?[{n,u,c:""}]:[]}));sg.close();toast("Đã gửi góp ý. Quản trị viên sẽ xem và cập nhật vào địa điểm.")}catch(e){$("#sgE").textContent=e.message}};
@@ -550,13 +565,13 @@ $("#pTest").onclick=async()=>{const s=await getSub();if(!s)return;const b=$("#pT
 /* ===== Thêm icon ra màn hình chính ===== */
 let dip=null;
 const inApp=/Zalo|FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|Messenger/i.test(UA);
-addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e;updInstall();maybeBanner()});
-addEventListener("appinstalled",()=>{dip=null;$("#instBar").hidden=true;updInstall();toast("Đã thêm Lịch Sự Kiện ra màn hình chính.")});
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e;updInstall()});
+addEventListener("appinstalled",()=>{dip=null;updInstall();toast("Đã thêm Lịch Sự Kiện ra màn hình chính.")});
 function updInstall(){const b=$("#iconBtn"),h=$("#iconHint"),t=b.lastChild;
   if(standalone()){t.textContent="Đã cài trên máy này";h.textContent="Bạn đang mở app từ icon màn hình chính.";return}
   if(dip){t.textContent="Thêm vào màn hình chính ngay";h.textContent="Bấm 1 lần, máy sẽ hỏi Cài đặt / Thêm – icon tự xuất hiện ngoài màn hình.";return}
   t.textContent="Tạo Icon Màn Hình";h.textContent=isIOS?"iPhone/iPad: bấm để xem 4 bước thêm icon bằng Safari (Apple không cho trang web tự thêm).":isAnd?"Android: bấm để thêm icon (Chrome sẽ tự hỏi nếu hỗ trợ, nếu không sẽ hiện hướng dẫn).":"Thêm Lịch Sự Kiện ra màn hình chính điện thoại như một ứng dụng."}
-async function install(){if(dip){const e=dip;dip=null;try{await e.prompt();const c=await e.userChoice;if(c&&c.outcome==="accepted"){toast("Đang thêm icon ra màn hình chính…");$("#instBar").hidden=true}}catch{}updInstall();return}openGuide()}
+async function install(){if(dip){const e=dip;dip=null;try{await e.prompt();const c=await e.userChoice;if(c&&c.outcome==="accepted")toast("Đang thêm icon ra màn hình chính…")}catch{}updInstall();return}openGuide()}
 $("#iconBtn").onclick=()=>{if(standalone())return openGuide();install()};
 const SV={share:'<svg class="ii" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
   add:'<svg class="ii" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -582,12 +597,6 @@ function openGuide(os){os=os||(isIOS?"ios":isAnd?"and":"pc");
   $("#icB").innerHTML=(standalone()?'<div class="okbox">Ứng dụng đã được thêm ra màn hình và đang chạy từ icon rồi.</div>':"")+guideHtml(os);
   const bi=$("#icB [data-inst]");if(bi)bi.onclick=()=>{ic.close();install()};if(!ic.open)ic.showModal()}
 $$("#icTabs button").forEach(b=>b.onclick=()=>openGuide(b.dataset.os));
-/* Gợi ý tự động: hiện thanh "Thêm ra màn hình chính" (tối đa 1 lần / 7 ngày) */
-function maybeBanner(){if(standalone()||$("#instBar").hidden===false)return;const t=+ls.get("lich-inst-later")||0;if(Date.now()-t<7*864e5)return;
-  if(!(dip||isIOS))return;$("#instBarT").textContent=isIOS?"Bấm Thêm để xem cách thêm icon (4 bước với Safari).":"Bấm Thêm – điện thoại sẽ tự hỏi cài đặt.";
-  setTimeout(()=>{if(!standalone())$("#instBar").hidden=false},2500)}
-$("#instYes").onclick=()=>{$("#instBar").hidden=true;install()};
-$("#instNo").onclick=()=>{$("#instBar").hidden=true;ls.set("lich-inst-later",Date.now())};
 
 $("#shBtn").onclick=async()=>{const u="https://lich-su-kien.vercel.app/",b=$("#shBtn");
   try{if(navigator.share){await navigator.share({title:"Lịch Sự Kiện",text:"Lịch sự kiện âm dương, nhắc lịch và ghi chú địa điểm",url:u});return}}catch{return}
@@ -602,5 +611,4 @@ if(typeof document!=="undefined"&&!globalThis.__TEST__){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){tick();sync()}});addEventListener("online",sync);
   setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);
   if("serviceWorker"in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("/sw.js").then(r=>{swReg=r;renderPush()}).catch(()=>{});
-  maybeBanner();
 }

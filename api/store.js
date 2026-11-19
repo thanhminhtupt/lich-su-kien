@@ -27,7 +27,7 @@ async function stats(){const k=vkeys(),r=await L.redis(["MGET",k.d,k.w,k.m,k.all
 /* Dữ liệu trả về tuỳ người xem: khách thấy mục đã duyệt; thành viên thấy thêm mục mình gửi; quản trị viên thấy tất cả */
 function view(d,u){const admin=u&&u.role==="admin",uid=u&&u.uid;
   const vis=x=>x.status!=="pending"||admin||x.by===uid;
-  const out=x=>{const{by,byName,...r}=x;r.mine=!!uid&&by===uid;if(admin&&by){r.by=by;r.byName=byName}return r};
+  const out=x=>{const{by,byName,delReq,...r}=x;r.mine=!!uid&&by===uid;if(admin&&by){r.by=by;r.byName=byName}if(delReq&&(admin||r.mine))r.delReq=delReq;return r};
   return{events:d.events.filter(vis).map(out),places:d.places.filter(vis).map(out),
     suggestions:d.suggestions.filter(s=>admin||s.by===uid).map(out),v:d.v}}
 
@@ -57,8 +57,10 @@ module.exports=L.handle(async(req,res)=>{
       d.places=(Array.isArray(b.places)?b.places:[]).slice(0,500).map(cleanPlace).filter(Boolean);return done()}
     case"upsert":{const it=(k==="events"?cleanEvent:cleanPlace)(b.item);list();if(!it)fail(400,"Dữ liệu không hợp lệ.");dup(it);
       const i=d[k].findIndex(x=>x.id===it.id),old=i>=0?d[k][i]:null;
-      if(old){if(!admin&&!(old.status==="pending"&&old.by===u.uid))fail(403,"Chỉ quản trị viên mới sửa được mục đã duyệt. Bạn có thể gửi góp ý.");
-        d[k][i]={...it,status:old.status,by:old.by,byName:old.byName,at:old.at}}
+      /* Thành viên chỉ sửa được mục do chính mình tạo; mục của quản trị viên / người khác thì gửi góp ý */
+      if(old){if(!admin&&old.by!==u.uid)fail(403,"Bạn chỉ sửa được "+KIND[k]+" do chính bạn tạo."+(k==="places"?" Với địa điểm của người khác, hãy gửi góp ý.":""));
+        d[k][i]={...it,status:old.status,by:old.by,byName:old.byName,at:old.at,...(old.delReq?{delReq:old.delReq}:{})};
+        if(!admin&&old.status!=="pending"){await L.saveData(d);await L.notify(await L.adminIds(),`${u.name} vừa sửa ${KIND[k]} "${it.name}" (do bạn ấy tạo).`,"",d);return res.status(200).json({...view(d,u),ok:true})}}
       else{if(d[k].length>=500)fail(400,"Đã đạt giới hạn 500 mục.");
         d[k].push({...it,status:admin?"approved":"pending",by:u.uid,byName:u.name,at:Date.now()})}
       /* Quản trị viên đưa góp ý vào địa điểm */
@@ -68,8 +70,21 @@ module.exports=L.handle(async(req,res)=>{
         await L.notify([u.uid],`Đã gửi ${KIND[k]} "${it.name}". Quản trị viên sẽ duyệt trước khi hiển thị.`,"#duyet",d);
         return res.status(200).json({...view(d,u),ok:true,pending:true})}
       return done()}
-    case"delete":{const x=find(b.id);if(!admin&&!(x.status==="pending"&&x.by===u.uid))fail(403,"Bạn không có quyền xoá mục này.");
-      d[k]=d[k].filter(i=>i!==x);if(k==="places")d.suggestions=d.suggestions.filter(s=>s.placeId!==x.id);return done()}
+    /* Chỉ quản trị viên được xoá. Thành viên gửi yêu cầu xoá (chỉ với mục mình tạo) */
+    case"delete":{if(!admin)fail(403,"Thành viên không xoá được. Hãy bấm Yêu cầu xoá để quản trị viên xoá giúp.");const x=find(b.id);
+      d[k]=d[k].filter(i=>i!==x);if(k==="places")d.suggestions=d.suggestions.filter(s=>s.placeId!==x.id);await L.saveData(d);
+      if(x.delReq&&x.by&&x.by!==u.uid)await L.notify([x.by],`Quản trị viên đã xoá ${KIND[k]} "${x.name}" theo yêu cầu của bạn.`,"",d);
+      return res.status(200).json({...view(d,u),ok:true})}
+    case"reqDelete":{const x=find(b.id);if(x.by!==u.uid)fail(403,"Bạn chỉ yêu cầu xoá được "+KIND[k]+" do chính bạn tạo.");
+      if(x.delReq)fail(400,"Bạn đã gửi yêu cầu xoá mục này rồi, hãy chờ quản trị viên.");
+      x.delReq={at:Date.now(),reason:str(b.reason,200)};await L.saveData(d);
+      await L.notify(await L.adminIds(),`${u.name} yêu cầu xoá ${KIND[k]} "${x.name}"${x.delReq.reason?": "+x.delReq.reason:"."}`,"#duyet",d);
+      await L.notify([u.uid],`Đã gửi yêu cầu xoá ${KIND[k]} "${x.name}". Quản trị viên sẽ xem và xoá.`,"#duyet",d);
+      return res.status(200).json({...view(d,u),ok:true})}
+    case"keep":{if(!admin)fail(403,"Chỉ quản trị viên mới làm được việc này.");const x=find(b.id);if(!x.delReq)fail(400,"Mục này không có yêu cầu xoá.");
+      delete x.delReq;await L.saveData(d);const why=str(b.reason,200);
+      if(x.by&&x.by!==u.uid)await L.notify([x.by],`Quản trị viên giữ lại ${KIND[k]} "${x.name}", chưa xoá${why?": "+why:"."}`,"",d);
+      return res.status(200).json({...view(d,u),ok:true})}
     case"approve":case"reject":{if(!admin)fail(403,"Chỉ quản trị viên mới duyệt được.");const x=find(b.id);
       if(x.status!=="pending")fail(400,"Mục này đã được duyệt rồi.");
       if(b.op==="approve"){x.status="approved";x.okAt=Date.now()}else d[k]=d[k].filter(i=>i!==x);
@@ -77,7 +92,7 @@ module.exports=L.handle(async(req,res)=>{
       const why=str(b.reason,200);
       if(x.by&&x.by!==u.uid)await L.notify([x.by],b.op==="approve"?`${KIND[k][0].toUpperCase()+KIND[k].slice(1)} "${x.name}" của bạn đã được duyệt và hiển thị trên app.`:`${KIND[k][0].toUpperCase()+KIND[k].slice(1)} "${x.name}" của bạn chưa được duyệt${why?": "+why:"."}`,"",d);
       return res.status(200).json({...view(d,u),ok:true})}
-    case"suggest":{const p=d.places.find(x=>x.id===String(b.placeId)&&x.status!=="pending");if(!p)fail(404,"Không tìm thấy địa điểm.");
+    case"suggest":{const p=d.places.find(x=>x.id===String(b.placeId)&&x.status!=="pending");if(!p)fail(404,"Không tìm thấy địa điểm.");if(!admin&&p.by===u.uid)fail(400,"Đây là địa điểm bạn tạo, bạn có thể bấm Sửa trực tiếp.");
       const text=str(b.text,1000),spots=cleanSpots(b.spots,true).slice(0,5);if(!text&&!spots.length)fail(400,"Hãy nhập nội dung góp ý.");
       if(d.suggestions.filter(s=>s.by===u.uid).length>=30)fail(400,"Bạn đang có quá nhiều góp ý chờ xem.");
       d.suggestions.push({id:L.rid("g"),placeId:p.id,text,spots,by:u.uid,byName:u.name,at:Date.now()});
@@ -85,7 +100,7 @@ module.exports=L.handle(async(req,res)=>{
       if(!admin)await L.notify(await L.adminIds(),`${u.name} góp ý cho địa điểm "${p.name}". Hãy xem và cập nhật.`,"#duyet",d);
       return res.status(200).json({...view(d,u),ok:true})}
     case"dismiss":{const s=d.suggestions.find(x=>x.id===String(b.id));if(!s)fail(404,"Không tìm thấy góp ý.");
-      if(!admin&&s.by!==u.uid)fail(403,"Bạn không có quyền xoá góp ý này.");
+      if(!admin)fail(403,"Chỉ quản trị viên mới xử lý được góp ý.");
       d.suggestions=d.suggestions.filter(x=>x!==s);await L.saveData(d);
       if(admin&&s.by!==u.uid){const p=d.places.find(x=>x.id===s.placeId);await L.notify([s.by],`Quản trị viên đã xem góp ý của bạn cho địa điểm "${p?p.name:""}".`,"",d)}
       return res.status(200).json({...view(d,u),ok:true})}

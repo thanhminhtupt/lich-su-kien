@@ -1,4 +1,6 @@
-# Lịch Sự Kiện – by Đức Anh Hoàng (bản 2.0)
+# Lịch Sự Kiện – by Đức Anh Hoàng (bản 2.2)
+
+**Hướng dẫn đưa lên Vercel từng bước: xem `HUONG-DAN-VERCEL.md`.**
 
 Web app quản lý sự kiện theo **ngày âm hoặc dương**, ghi chú địa điểm, tài khoản thành viên, duyệt bài và **thông báo đẩy** có **số trên icon app**. Giao diện phẳng kiểu iOS, tự đổi sáng/tối, cài như ứng dụng (PWA).
 
@@ -9,7 +11,9 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, ghi chú đị
 - **Duyệt bài**: thành viên gửi lịch / địa điểm → chờ duyệt, chưa hiển thị. Quản trị viên và người gửi đều nhận thông báo; khi duyệt / từ chối người gửi được báo (kèm lý do).
 - **Trùng tên địa điểm**: gõ tên là app hiện ngay địa điểm trùng (chặn lưu) hoặc tương tự (cảnh báo), có nút **Xem** và **Góp ý vào đây**.
 - **Góp ý**: thành viên gửi góp ý (nội dung + vị trí mới) vào địa điểm đã có. Góp ý đính kèm ngay dưới địa điểm cho quản trị viên; bấm **Đưa vào địa điểm** để sửa & lưu, người góp ý được báo.
-- **Quản trị viên sửa / xoá mọi địa điểm và sự kiện**; trang **Cần duyệt** (`/#duyet`).
+- **Quyền**: quản trị viên sửa / xoá mọi địa điểm và sự kiện. Thành viên chỉ **thêm** và **sửa nội dung do mình tạo**, **không xoá** được gì. Muốn xoá thì bấm **Yêu cầu xoá** → quản trị viên nhận thông báo, bấm Xoá hoặc Giữ lại → người yêu cầu được báo kết quả.
+- Thành viên **góp ý** được vào mọi địa điểm của quản trị viên hoặc thành viên khác (nút 💬 Góp ý ngay trên dòng địa điểm).
+- Trang **Cần duyệt** (`/#duyet`): yêu cầu xoá, lịch/địa điểm chờ duyệt, góp ý.
 - **Chuông thông báo** = sự kiện trong 7 ngày tới + thông báo chưa đọc. **Số trên icon app** luôn bằng số ở chuông.
 - **Thông báo đẩy**: mỗi sáng 7:00 – 8:00 (nếu có việc), và ngay khi có bài cần duyệt / được duyệt / góp ý. Có nút **Bật**, **Gửi thử**, **Tắt** và danh sách thiết bị.
 - **Tạo Icon Màn Hình** nằm trong mục QR: Android/Chrome/Edge bấm 1 lần là máy hỏi Cài đặt; iPhone hiện 4 bước có hình minh hoạ. Có thanh gợi ý tự hiện (tối đa 1 lần / 7 ngày).
@@ -21,7 +25,7 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, ghi chú đị
 |---|---|---|
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Có | Upstash Redis (đã có từ trước) |
 | `ADMIN_PASSWORD` | Có | Mật khẩu ban đầu của tài khoản `admin` (đổi trong app thì mật khẩu mới thay thế) |
-| `ADMIN_EMAIL` | Nên có | Email của admin, để đăng nhập bằng email và dùng Quên mật khẩu |
+| `ADMIN_EMAIL` | Không bắt buộc | Mặc định ducanhitpt@gmail.com: đăng nhập admin bằng email này + ADMIN_PASSWORD, dùng được Quên mật khẩu |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Cho thông báo đẩy | Tạo 1 lần: `npx web-push generate-vapid-keys` |
 | `VAPID_SUBJECT` | Nên có | `mailto:email-cua-ban@gmail.com` |
 | `CRON_SECRET` | Cho nhắc buổi sáng | Chuỗi ngẫu nhiên bất kỳ (Vercel Cron tự gửi kèm) |

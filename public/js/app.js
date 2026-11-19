@@ -656,5 +656,9 @@ if(typeof document!=="undefined"&&!globalThis.__TEST__){
   setInterval(()=>{if(!document.hidden)sync()},60000);setInterval(()=>{$("#hello").textContent=greet()},6e4);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){tick();sync()}});addEventListener("online",sync);
   setInterval(()=>{if(day0(new Date())-T0)location.reload();else renderNotes()},3600000);
-  if("serviceWorker"in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("/sw.js").then(r=>{swReg=r;renderPush()}).catch(()=>{});
+  if("serviceWorker"in navigator&&location.protocol!=="file:"){
+    /* Có bản mới: service worker mới tiếp quản → tự tải lại trang 1 lần để dùng giao diện mới */
+    const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtl&&!reloaded){reloaded=true;location.reload()}});
+    navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(r=>{swReg=r;renderPush();r.update().catch(()=>{})}).catch(()=>{})}
 }

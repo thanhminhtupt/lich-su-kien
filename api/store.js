@@ -15,7 +15,8 @@ function cleanEvent(e){if(!e||typeof e!=="object")return null;
   return{id,name,cal,m,a,m2,b,repeat,every,year,spots:cleanSpots(e.spots,false),time:/^\d{2}:\d{2}$/.test(e.time||"")?e.time:"",note:str(e.note,500)}}
 function cleanPlace(p){if(!p||typeof p!=="object")return null;
   const id=str(p.id,40),name=str(p.name,80),note=str(p.note,1000);
-  return /^[\w-]+$/.test(id)&&name?{id,name,note,spots:cleanSpots(p.spots,true)}:null}
+  const prov=int(p.prov,1,34)||0,sub=prov?str(p.sub,40):"";
+  return /^[\w-]+$/.test(id)&&name?{id,name,note,prov,sub,spots:cleanSpots(p.spots,true)}:null}
 const KIND={events:"lịch",places:"địa điểm"};
 
 /* ===== Đếm lượt truy cập (giờ Việt Nam): hôm nay, tuần này (thứ 2 → CN), tháng này, toàn thời gian ===== */
@@ -93,7 +94,7 @@ module.exports=L.handle(async(req,res)=>{
       if(x.by&&x.by!==u.uid)await L.notify([x.by],b.op==="approve"?`${KIND[k][0].toUpperCase()+KIND[k].slice(1)} "${x.name}" của bạn đã được duyệt và hiển thị trên app.`:`${KIND[k][0].toUpperCase()+KIND[k].slice(1)} "${x.name}" của bạn chưa được duyệt${why?": "+why:"."}`,"",d);
       return res.status(200).json({...view(d,u),ok:true})}
     case"suggest":{const p=d.places.find(x=>x.id===String(b.placeId)&&x.status!=="pending");if(!p)fail(404,"Không tìm thấy địa điểm.");if(!admin&&p.by===u.uid)fail(400,"Đây là địa điểm bạn tạo, bạn có thể bấm Sửa trực tiếp.");
-      const text=str(b.text,1000),spots=cleanSpots(b.spots,true).slice(0,5);if(!text&&!spots.length)fail(400,"Hãy nhập nội dung góp ý.");
+      const text=str(b.text,1000),spots=cleanSpots(b.spots,true).slice(0,10);if(!text&&!spots.length)fail(400,"Hãy nhập nội dung góp ý.");
       if(d.suggestions.filter(s=>s.by===u.uid).length>=30)fail(400,"Bạn đang có quá nhiều góp ý chờ xem.");
       d.suggestions.push({id:L.rid("g"),placeId:p.id,text,spots,by:u.uid,byName:u.name,at:Date.now()});
       await L.saveData(d);

@@ -429,3 +429,51 @@ fieldset.seg label:first-of-type{border-radius:999px 0 0 999px}fieldset.seg labe
 .mi,.rem{border-radius:16px;padding:10px 12px}
 .revcta{border-radius:16px}
 .day.sel{box-shadow:inset 0 0 0 2px #007aff}
+
+/* ===== Bản 2.3: nền mờ nhiều màu + thẻ kính mờ (glass) ===== */
+:root{--glasscard:rgba(255,255,255,.66);--glassline:rgba(255,255,255,.7)}
+@media(prefers-color-scheme:dark){:root{--glasscard:rgba(28,28,30,.62);--glassline:rgba(255,255,255,.08)}}
+html{background:var(--bg)}
+body{background:transparent;position:relative}
+body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;
+  background:radial-gradient(40% 35% at 12% 8%,rgba(7,143,6,.30),transparent 70%),radial-gradient(38% 32% at 88% 14%,rgba(0,122,255,.30),transparent 70%),
+    radial-gradient(42% 36% at 78% 72%,rgba(255,149,0,.24),transparent 70%),radial-gradient(40% 34% at 18% 82%,rgba(175,82,222,.22),transparent 70%),var(--bg);
+  filter:blur(40px) saturate(140%)}
+.card,.wlink,.visits{background:var(--glasscard);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border:.5px solid var(--glassline);box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.today{background:var(--brand);border:0;box-shadow:0 10px 30px rgba(7,143,6,.28)}
+.hdr{background:color-mix(in srgb,var(--bg) 55%,transparent)}
+dialog{background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%)}
+.rem,.mi,.ei,.detail .it,.spot,.steps li{background:color-mix(in srgb,var(--card) 70%,transparent)}
+@media(prefers-color-scheme:dark){.rem,.mi,.ei,.detail .it,.spot,.steps li{background:rgba(255,255,255,.06)}}
+
+/* Tên người đăng nhập */
+.uname{font-weight:700;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:560px){.uname{max-width:80px;font-size:.9rem}}
+/* Thêm sự kiện vào ngày đang chọn */
+.addday{margin:10px 0 2px}
+.more{color:var(--mute);font-size:.9rem;margin:2px 2px 6px}
+
+/* Địa điểm theo tỉnh */
+.provbar{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.provbar::-webkit-scrollbar{display:none}
+.pv-chip{flex:none;min-height:34px;padding:4px 12px;font-size:.9rem;background:color-mix(in srgb,var(--card) 70%,transparent);color:var(--text);font-weight:600}
+.pv-chip b{color:#007aff;margin-left:2px}
+.pv-chip.on{background:#007aff;color:#fff}.pv-chip.on b{color:#fff}
+.pgrp{margin-bottom:10px}
+.pgh{display:flex;align-items:center;gap:10px;margin:12px 0 4px;padding:8px 10px;border-radius:14px;background:color-mix(in srgb,#007aff 9%,transparent)}
+.pno{flex:none;display:grid;place-items:center;min-width:30px;height:30px;border-radius:50%;background:#007aff;color:#fff;font-size:.9rem}
+.pgt{flex:1;display:grid;line-height:1.25}
+.pgt small{font-weight:500;color:var(--mute);font-size:.82rem}
+.pgh .badge{margin-left:auto}
+.plist{max-height:none}
+.chip.subc{background:color-mix(in srgb,#0b9d0a 15%,transparent);color:#067a05;font-size:.78rem;vertical-align:2px}
+.subs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.subs .fsec-h{width:100%}
+.subc2{display:inline-flex;position:relative;color:var(--text);font-size:.95rem}
+.subc2 input{position:absolute;opacity:0;pointer-events:none}
+.subc2 span{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:var(--fill);font-weight:600;cursor:pointer}
+.subc2 span::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid var(--mute);box-sizing:border-box}
+.subc2 input:checked+span{background:#007aff;color:#fff}
+.subc2 input:checked+span::before{border:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' stroke='%23007aff' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/100% no-repeat}
+.subc2 input:focus-visible+span{outline:2px solid #007aff;outline-offset:2px}
+#sgSpots{display:grid;gap:10px}

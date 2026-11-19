@@ -1,8 +1,16 @@
-# Lịch Sự Kiện – by Đức Anh Hoàng (bản 2.2)
+# Lịch Sự Kiện – by Đức Anh Hoàng (bản 2.3)
 
 **Hướng dẫn đưa lên Vercel từng bước: xem `HUONG-DAN-VERCEL.md`.**
 
 Web app quản lý sự kiện theo **ngày âm hoặc dương**, ghi chú địa điểm, tài khoản thành viên, duyệt bài và **thông báo đẩy** có **số trên icon app**. Giao diện phẳng kiểu iOS, tự đổi sáng/tối, cài như ứng dụng (PWA).
+
+## Có gì mới trong bản 2.3
+- Địa điểm sắp xếp theo **34 tỉnh, thành mới** (đúng thứ tự 1 → 34), tỉnh không có địa điểm thì ẩn; thanh chọn nhanh tỉnh ở trên danh sách.
+- Thêm / sửa địa điểm: chọn tỉnh (1 – 34) → tick chọn khu vực (tỉnh cũ). Địa điểm cũ chưa có tỉnh nằm ở nhóm "Chưa chọn tỉnh", bấm Sửa để chọn.
+- Góp ý: thêm được nhiều vị trí (+ Thêm vị trí); nội dung góp ý nằm dưới link Google và trở thành "Ghi chú vị trí" khi quản trị viên đưa vào địa điểm.
+- Bấm 1 ngày trên lịch → nút "+ Thêm sự kiện ngày …".
+- Đăng nhập admin hiện "Admin", thành viên hiện tên của mình. Mục Sắp tới chỉ hiện 5 sự kiện gần nhất.
+- Nền mờ nhiều màu + thẻ kính mờ kiểu iOS.
 
 ## Có gì mới trong bản 2.0
 - **Tài khoản**: đăng ký (tên + email + mật khẩu), đăng nhập, đăng xuất, đổi tên, đổi mật khẩu, **quên mật khẩu** (gửi liên kết đặt lại vào đúng email đã đăng ký, hiệu lực 30 phút).

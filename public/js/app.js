@@ -126,7 +126,8 @@ function eventsOn(date){const t=+day0(date),Y=date.getFullYear();
   return evA.filter(e=>{for(const y of[Y-1,Y]){if(!yearOk(e,y))continue;let o;try{o=occ(e,y)}catch{continue}if(+o.s<=t&&t<=+o.en)return true}return false})}
 
 /* ===== Hôm nay ===== */
-const greet=()=>{const h=new Date().getHours();return"Xin chào "+(h>=5&&h<11?"buổi sáng":h>=11&&h<13?"buổi trưa":h>=13&&h<18?"buổi chiều":h>=18&&h<22?"buổi tối":"buổi đêm")+(me?", "+me.name:"")};
+const dispName=()=>me?(isAdmin()?"Admin":me.name):"";
+const greet=()=>{const h=new Date().getHours();return"Xin chào "+(h>=5&&h<11?"buổi sáng":h>=11&&h<13?"buổi trưa":h>=13&&h<18?"buổi chiều":h>=18&&h<22?"buổi tối":"buổi đêm")+(me?", "+dispName():"")};
 function renderToday(){$("#hello").textContent=greet();const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());
   $("#wd").textContent="Hôm nay là "+WD[now.getDay()].toLowerCase();
   $("#solar").textContent=`Ngày ${now.getDate()} tháng ${now.getMonth()+1} năm ${now.getFullYear()}`;
@@ -157,7 +158,11 @@ function renderCal(){mS.value=vm;yS.value=vy;
     g.append(b)}}
 function renderDetail(){const l=toLunar(sel.getDate(),sel.getMonth()+1,sel.getFullYear()),ev=eventsOn(sel),hol=holiday(sel,l);
   $("#detail").innerHTML=`<b style="color:var(--text)">${WD[sel.getDay()]}, ${fmtY(sel)}</b> · <span class="lun">âm lịch ${l.d}/${l.m}</span>${hol.length?` · <span class="holt">${hol.join(", ")}</span>`:""}`+
-   (ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span>${repChip(e,"tag")}${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${spotsHtml(e)}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+   `<button class="pill sm filled blue addday" data-addday>+ Thêm sự kiện ngày ${fmt(sel)}</button>`+(ev.length?ev.map(e=>`<div class="it" role="button" tabindex="0" data-ev="${esc(e.id)}"><b>${esc(e.name)}</b><span class="tag">${dateTxt(e)}</span>${repChip(e,"tag")}${e.time?`<small>Bắt đầu lúc ${e.time}</small>`:""}${spotsHtml(e)}${e.note?`<small>${esc(e.note)}</small>`:""}</div>`).join(""):`<div class="it">Không có sự kiện.</div>`)}
+$("#detail").addEventListener("click",ev=>{if(ev.target.closest("[data-addday]"))openAddOn(sel)});
+function openAddOn(d){requireLogin(()=>{resetForm();const l=toLunar(d.getDate(),d.getMonth()+1,d.getFullYear());
+  $("#fA").value=$("#fB").value=Math.min(l.d,30);$("#fM").value=$("#fM2").value=l.m;$("#fY").value=l.y;$("#fD1").value=$("#fD2").value=isoD(d);
+  setRadio("rep","o");syncForm();ed.showModal();$("#fN").focus()},"Hãy đăng nhập để thêm sự kiện. Chưa có tài khoản? Bấm Tạo tài khoản.")}
 function renderMonth(){const n=new Date(vy,vm+1,0).getDate(),mp=new Map();
   for(let i=1;i<=n;i++)eventsOn(new Date(vy,vm,i)).forEach(e=>{const r=mp.get(e.id)||{e,f:i,l:i};r.l=i;mp.set(e.id,r)});
   $("#mTitle").textContent=`Sự kiện tháng ${vm+1}/${vy}`;
@@ -183,8 +188,8 @@ function updateBadge(){const n=badgeCount(),bn=$("#bellN");bn.hidden=!n;bn.textC
   try{if(navigator.setAppBadge){n>0?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{})}}catch{}}
 const remItem=(n)=>{const st=n.run?"now":n.dd<=3?"w3":"w7";return`<div class="rem ${st}" role="button" tabindex="0" data-ev="${esc(n.e.id)}"><span class="cnt"><b>${n.run?"Nay":n.dd}</b><small>${n.run?"đang diễn ra":"ngày nữa"}</small></span><span class="rb"><b>${esc(n.e.name)}</b><small class="dl"><b>${fmt(n.o.s)}${n.o.en>n.o.s?" – "+fmt(n.o.en):""}/${n.o.en.getFullYear()}</b> · ${dateTxt(n.e)}${n.e.time?" · "+n.e.time:""}</small>${spotsHtml(n.e)}${n.e.note?`<small class="nt">${esc(n.e.note)}</small>`:""}<span class="chips">${repChip(n.e)}<span class="chip d">${n.run?"Đang diễn ra":"Còn "+n.dd+" ngày"}</span></span></span></div>`};
 function renderNotes(){const{out,up}=remList(),nb=$("#nb");nb.hidden=!out.length;nb.textContent=out.length;updateBadge();
-  $("#notes").innerHTML=up.length?up.slice(0,10).map(remItem).join("")
-    +(up.length>10?`<div class="empty">Đang hiện 10 sự kiện gần nhất, còn ${up.length-10} sự kiện nữa.</div>`:""):`<div class="empty">Chưa có sự kiện nào.</div>`}
+  $("#notes").innerHTML=up.length?up.slice(0,5).map(remItem).join(""):`<div class="empty">Chưa có sự kiện nào.</div>`;
+  $("#notesMore").textContent=up.length>5?`Đang hiện 5 sự kiện gần nhất. Bấm "Tất cả các sự kiện" để xem thêm ${up.length-5} sự kiện.`:""}
 $("#allBtn").onclick=()=>{location.hash="#tat-ca"};
 
 /* ===== Bảng thông báo (bấm chuông) ===== */
@@ -215,7 +220,7 @@ $$("#acc [data-go]").forEach(b=>b.onclick=()=>accView(b.dataset.go));
 function requireLogin(cb,why){if(me)return cb();openAcc("login",why||"Hãy đăng nhập (hoặc tạo tài khoản) để tiếp tục.");afterLogin=cb}
 function formErr(f,e){f.querySelector(".err").textContent=e.message||String(e)}
 async function busy(f,fn){const b=f.querySelector("button:not([type=button])");if(b)b.disabled=true;try{await fn()}catch(e){formErr(f,e)}finally{if(b)b.disabled=false}}
-function loggedIn(j){const cb=afterLogin;afterLogin=null;startSession(j);acc.close();toast("Xin chào "+j.me.name+"!");if(cb)setTimeout(cb,50)}
+function loggedIn(j){const cb=afterLogin;afterLogin=null;startSession(j);acc.close();toast("Xin chào "+(j.me.role==="admin"?"Admin":j.me.name)+"!");if(cb)setTimeout(cb,50)}
 $("#fLogin").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{const j=await api("auth",{op:"login",id:$("#liId").value.trim(),password:$("#liPw").value},false);$("#liPw").value="";loggedIn(j)})};
 $("#fSignup").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{
   if($("#suPw").value!==$("#suPw2").value)throw new Error("Hai mật khẩu chưa giống nhau.");
@@ -227,7 +232,7 @@ let resetTok="";
 $("#fReset").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{
   if($("#rsPw").value!==$("#rsPw2").value)throw new Error("Hai mật khẩu chưa giống nhau.");
   const j=await api("auth",{op:"reset",token:resetTok,password:$("#rsPw").value},false);f.reset();resetTok="";loggedIn(j);toast("Đã đặt mật khẩu mới.")})};
-function renderMe(){if(!me)return;const ini=initials(me.name);$("#meIni2").textContent=ini;$("#meName").textContent=me.name;$("#meMail").textContent=me.uid==="admin"?(me.email||"Tài khoản: admin"):me.email;
+function renderMe(){if(!me)return;const ini=initials(me.name);$("#meIni2").textContent=ini;$("#meName").textContent=dispName();$("#meMail").textContent=me.uid==="admin"?(me.email||"Tài khoản: admin"):me.email;
   $("#meRole").textContent=isAdmin()?"Quản trị viên":"Thành viên";$("#meRole").className="role"+(isAdmin()?" adm":"");
   $("#pfName").value=me.name;$("#pfMailW").hidden=me.uid!=="admin";$("#pfMail").value=me.email||"";
   $("#meSess").textContent="Phiên làm việc tự kết thúc sau 20 phút không thao tác."}
@@ -240,7 +245,7 @@ async function logout(){try{await api("auth",{op:"logout"})}catch{}acc.close();e
 $("#logoutBtn").onclick=logout;$("#logout2").onclick=logout;
 $("#loginBtn").onclick=()=>openAcc("login");$("#meBtn").onclick=()=>openAcc("me");
 function renderAcc(){const on=!!me&&!!token;$("#loginBtn").hidden=on;$("#who").hidden=!on;
-  if(on){$("#meIni").textContent=initials(me.name);$("#meBtn").title=me.name+(isAdmin()?" (quản trị viên)":"");$("#meBtn").classList.toggle("adm",isAdmin());tick()}
+  if(on){$("#meName0").textContent=dispName();$("#meIni").textContent=isAdmin()?"AD":initials(me.name);$("#meBtn").title=me.name+(isAdmin()?" (quản trị viên)":"");$("#meBtn").classList.toggle("adm",isAdmin());tick()}
   const rb=$("#reviewBtn"),n=pendingCount();rb.hidden=!on||(!isAdmin()&&!n);
   rb.firstChild.textContent=isAdmin()?"Cần duyệt ":"Bài gửi của tôi ";$("#reviewN").textContent=n;$("#reviewN").classList.toggle("z",!n);
   $("#hello").textContent=greet()}
@@ -359,7 +364,7 @@ async function reqDelete(k,id){const x=(k==="events"?events:places).find(i=>i.id
 function pendingCount(){if(!me)return 0;const all=[...events,...places];return all.filter(x=>x.status==="pending"&&(isAdmin()||x.mine)).length+all.filter(x=>x.delReq&&x.status!=="pending").length+(isAdmin()?suggestions.length:0)}
 const plName=id=>{const p=places.find(x=>x.id===id);return p?p.name:"(đã xoá)"};
 const byLine=x=>`<small class="by2">${x.byName?"Gửi bởi <b>"+esc(x.byName)+"</b> · ":""}${x.at?ago(x.at):""}</small>`;
-function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.text):"<i>(không có nội dung)</i>"}</div>${(s.spots||[]).length?'<ul class="spl">'+s.spots.map(x=>`<li><span class="sn2">${esc(x.n||"")}</span>${x.u?` <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}</li>`).join("")+"</ul>":""}${byLine(s)}
+function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.text):"<i>(không có nội dung)</i>"}</div>${(s.spots||[]).length?'<ul class="spl">'+s.spots.map(x=>`<li><span class="sn2">${esc(x.n||"")}</span>${x.u?` <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${x.c?`<div class="sc2">${esc(x.c)}</div>`:""}</li>`).join("")+"</ul>":""}${byLine(s)}
   <div class="btns">${adm?`<button class="pill sm filled blue" data-merge="${esc(s.id)}">Đưa vào địa điểm</button><button class="pill sm" data-dismiss="${esc(s.id)}">Bỏ qua</button>`:`<span class="chip pend">Đang chờ quản trị viên xem</span>`}</div></div>`}
 function renderReview(){if($("#revPage").hidden)return;const adm=isAdmin(),box=$("#revList");
   if(!me){box.innerHTML=`<div class="empty">Hãy đăng nhập để xem mục này.</div>`;return}
@@ -456,25 +461,50 @@ cleanJunk();
 let toastT=0;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3800)}
 
 /* ===== Ghi chú địa điểm ===== */
+/* 34 tỉnh, thành mới (từ 2025) và các tỉnh cũ sáp nhập vào */
+const PROV=[["Hà Nội"],["TP. Hồ Chí Minh",["TP. Hồ Chí Minh","Bà Rịa - Vũng Tàu","Bình Dương"]],["Hải Phòng",["Hải Phòng","Hải Dương"]],["Đà Nẵng",["Đà Nẵng","Quảng Nam"]],
+ ["Cần Thơ",["Cần Thơ","Sóc Trăng","Hậu Giang"]],["Huế"],["Tuyên Quang",["Tuyên Quang","Hà Giang"]],["Lào Cai",["Lào Cai","Yên Bái"]],["Thái Nguyên",["Thái Nguyên","Bắc Kạn"]],
+ ["Phú Thọ",["Phú Thọ","Vĩnh Phúc","Hòa Bình"]],["Bắc Ninh",["Bắc Ninh","Bắc Giang"]],["Hưng Yên",["Hưng Yên","Thái Bình"]],["Ninh Bình",["Ninh Bình","Hà Nam","Nam Định"]],
+ ["Quảng Trị",["Quảng Trị","Quảng Bình"]],["Quảng Ngãi",["Quảng Ngãi","Kon Tum"]],["Gia Lai",["Gia Lai","Bình Định"]],["Khánh Hòa",["Khánh Hòa","Ninh Thuận"]],
+ ["Lâm Đồng",["Lâm Đồng","Đắk Nông","Bình Thuận"]],["Đắk Lắk",["Đắk Lắk","Phú Yên"]],["Đồng Nai",["Đồng Nai","Bình Phước"]],["Tây Ninh",["Tây Ninh","Long An"]],
+ ["Vĩnh Long",["Vĩnh Long","Bến Tre","Trà Vinh"]],["Đồng Tháp",["Đồng Tháp","Tiền Giang"]],["Cà Mau",["Cà Mau","Bạc Liêu"]],["An Giang",["An Giang","Kiên Giang"]],
+ ["Lai Châu"],["Điện Biên"],["Sơn La"],["Lạng Sơn"],["Quảng Ninh"],["Thanh Hóa"],["Nghệ An"],["Hà Tĩnh"],["Cao Bằng"]];
+const provName=i=>i>=1&&i<=34?PROV[i-1][0]:"";
+let provF=0;
+
 const pl=$("#pl");let editingP=null,mergeS=null;const openP=new Set();
 const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
 function placeBody(p){let x="";const sp=p.spots||[];
   if(sp.length)x+='<ul class="spl">'+sp.map(s=>`<li>${s.n?`<span class="sn2">${esc(s.n)}</span>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.c?`<div class="sc2">${esc(s.c)}</div>`:""}</li>`).join("")+"</ul>";
   if(p.note)x+=`<div class="pnote"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
+function placeRow(p,adm){const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · "),sg=suggestions.filter(s=>s.placeId===p.id),canSg=!adm&&!p.mine;
+  return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${p.sub&&p.prov&&PROV[p.prov-1][1]?` <span class="chip subc">${esc(p.sub)}</span>`:""}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}`+
+    (sg.length?`<div class="sgs"><div class="sgh">${adm?"Góp ý của thành viên":"Góp ý của bạn"}</div>${sg.map(s=>sugHtml(s,adm)).join("")}</div>`:"")+
+    (canSg?`<div class="sgcta"><div><b>Bạn biết thêm về địa điểm này?</b><span>Góp ý sẽ đính kèm vào địa điểm để quản trị viên cập nhật cho đầy đủ hơn.</span></div><button type="button" class="pill filled blue" data-sg="${esc(p.id)}">💬 Góp ý thêm</button></div>`:"")+
+    (p.byName&&adm?byLine(p):"")+ownActs(p,"places")+`</div></details>`}
+/* Danh sách địa điểm nhóm theo 34 tỉnh (đúng thứ tự 1 → 34), tỉnh không có địa điểm thì ẩn */
 function renderPlaces(){const q=nrm($("#pSearch").value.trim()),adm=isAdmin();
-  const txt=p=>[p.name,p.note,...(p.spots||[]).flatMap(s=>[s.n,s.c])].filter(Boolean).join(" ");
-  const L=plA.filter(p=>!q||nrm(txt(p)).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"}));
-  $("#pCount").textContent=q?`${L.length}/${plA.length}`:plA.length;
+  const txt=p=>[p.name,p.note,provName(p.prov),p.sub,...(p.spots||[]).flatMap(s=>[s.n,s.c])].filter(Boolean).join(" ");
+  const byName=(a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"});
+  const M=plA.filter(p=>!q||nrm(txt(p)).includes(q)),groups=new Map();
+  for(const p of M){const k=p.prov||0;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(p)}
+  const keys=[...groups.keys()].sort((a,b)=>(a||99)-(b||99));if(provF&&!groups.has(provF))provF=0;
+  $("#pCount").textContent=q?`${M.length}/${plA.length}`:plA.length;
   $("#pAdd").textContent=me&&!adm?"+ Gửi địa điểm mới":"+ Thêm địa điểm";
-  $("#pList").innerHTML=L.length?L.map(p=>{const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · "),sg=suggestions.filter(s=>s.placeId===p.id);
-    const canSg=!adm&&!p.mine;
-    return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span>${canSg?`<button type="button" class="sgq" data-sg="${esc(p.id)}" aria-label="Góp ý cho ${esc(p.name)}">💬 Góp ý</button>`:""}</summary><div class="pb">${placeBody(p)}`+
-      (sg.length?`<div class="sgs"><div class="sgh">${adm?"Góp ý của thành viên":"Góp ý của bạn"}</div>${sg.map(s=>sugHtml(s,adm)).join("")}</div>`:"")+
-      (canSg?`<div class="sgcta"><div><b>Bạn biết thêm về địa điểm này?</b><span>Góp ý sẽ đính kèm vào địa điểm để quản trị viên cập nhật cho đầy đủ hơn.</span></div><button type="button" class="pill filled blue" data-sg="${esc(p.id)}">💬 Góp ý thêm</button></div>`:"")+
-      (p.byName&&adm?byLine(p):"")+ownActs(p,"places")+`</div></details>`}).join(""):`<div class="empty">${plA.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $("#pProvs").innerHTML=keys.length>1?`<button type="button" class="pv-chip${provF?"":" on"}" data-prov="0">Tất cả <b>${M.length}</b></button>`+keys.map(k=>`<button type="button" class="pv-chip${provF===k?" on":""}" data-prov="${k}">${k?esc(provName(k)):"Chưa chọn tỉnh"} <b>${groups.get(k).length}</b></button>`).join(""):"";
+  $("#pList").innerHTML=M.length?keys.filter(k=>!provF||k===provF).map(k=>{const L=groups.get(k).sort((a,b)=>(a.sub||"").localeCompare(b.sub||"","vi")||byName(a,b));
+    return`<section class="pgrp"><h3 class="pgh"><span class="pno">${k||"?"}</span><span class="pgt">${k?esc(provName(k)):"Chưa chọn tỉnh"}${k&&PROV[k-1][1]?`<small>${esc(PROV[k-1][1].join(" · "))}</small>`:""}</span><span class="badge ok">${L.length}</span></h3>${!k&&adm?'<div class="note sm">Bấm Sửa từng địa điểm để chọn tỉnh cho đúng.</div>':""}<div class="plist">${L.map(p=>placeRow(p,adm)).join("")}</div></section>`}).join("")
+    :`<div class="empty">${plA.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
+  $$("#pProvs [data-prov]").forEach(b=>b.onclick=()=>{provF=+b.dataset.prov;renderPlaces()});
   $$("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   bindActs($("#pList"))}
+/* Chọn tỉnh (1–34) → hiện các tỉnh cũ trong đó để tick chọn */
+for(let i=0;i<=34;i++)$("#plProv").add(new Option(i?i+". "+PROV[i-1][0]+(PROV[i-1][1]?" ("+PROV[i-1][1].join(", ")+")":""):"— Chọn tỉnh / thành phố —",i));
+function renderSubs(sel){const i=+$("#plProv").value,box=$("#plSubs"),subs=i?PROV[i-1][1]:null;
+  if(!subs){box.innerHTML="";box.hidden=true;return}box.hidden=false;
+  box.innerHTML=`<div class="fsec-h">Khu vực (tỉnh cũ):</div>`+subs.map(n=>`<label class="subc2"><input type="radio" name="plSub" value="${esc(n)}"${n===sel?" checked":""}><span>${esc(n)}</span></label>`).join("")}
+$("#plProv").onchange=()=>renderSubs("");
 function numberSpots(){$$("#spots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Vị trí "+(i+1))}
 function addSpot(s){s=s||{};const d=document.createElement("div");d.className="spot";
   d.innerHTML=`<div class="spot-h"><b></b><button type="button" class="pill sm danger" data-sx>Xoá vị trí</button></div>
@@ -495,6 +525,7 @@ function plDupCheck(){const dup=dupHint($("#plN").value,editingP,places,$("#plDu
 function openPlace(p,s){editingP=p?p.id:null;mergeS=s||null;$("#plTitle").textContent=s?"Cập nhật góp ý vào địa điểm":p?"Sửa địa điểm":isAdmin()?"Thêm địa điểm":"Gửi địa điểm mới";
   $("#plPend").hidden=!!p||isAdmin();$("#plN").value=p?p.name:"";$("#plC").value=p?p.note||"":"";
   $("#spots").innerHTML="";(p&&p.spots||[]).forEach(addSpot);
+  $("#plProv").value=p&&p.prov||(!p&&provF)||0;renderSubs(p&&p.sub||"");
   $("#plMerge").hidden=!s;
   if(s){$("#plMerge").innerHTML=`<b>Góp ý của ${esc(s.byName||"thành viên")}:</b> ${esc(s.text||"")}<br><small>Nội dung góp ý đã được thêm vào bên dưới. Chỉnh lại cho gọn rồi bấm Lưu.</small>`;
     (s.spots||[]).forEach(addSpot);if(s.text)$("#plC").value=($("#plC").value?$("#plC").value+"\n":"")+s.text}
@@ -507,17 +538,32 @@ function showPlace(id){location.hash="";$("#pSearch").value="";openP.add(id);ren
 $("#pAdd").onclick=()=>requireLogin(()=>openPlace(null),"Hãy đăng nhập để thêm địa điểm. Chưa có tài khoản? Bấm Tạo tài khoản.");
 $("#pSearch").addEventListener("input",renderPlaces);
 $("#plF").onsubmit=async ev=>{ev.preventDefault();
-  try{const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim(),spots:readSpots()};if(!o.name)return;
+  try{const prov=+$("#plProv").value,sb=document.querySelector("input[name=plSub]:checked");
+    if(!prov){alert("Hãy chọn tỉnh / thành phố (1 – 34) để địa điểm được sắp xếp đúng.");$("#plProv").focus();return}
+    if(PROV[prov-1][1]&&!sb){alert("Hãy tick chọn khu vực (tỉnh cũ) của địa điểm.");return}
+    const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim(),prov,sub:sb?sb.value:"",spots:readSpots()};if(!o.name)return;
     const j=await mutate("places","upsert",o,mergeS?{merge:mergeS.id}:undefined);pl.close();$("#pSearch").value="";renderPlaces();
     toast(mergeS?"Đã cập nhật địa điểm. Người góp ý đã được thông báo.":j.pending?"Đã gửi địa điểm. Quản trị viên sẽ duyệt trước khi hiển thị.":"Đã lưu địa điểm.");mergeS=null}
   catch(e){if(e.code==="dup")plDupCheck();alert(e.message)}};
 
 /* ===== Góp ý cho địa điểm của quản trị viên ===== */
 const sg=$("#sg");let sgPlace=null;
-function openSuggest(id){requireLogin(()=>{const p=places.find(x=>x.id===id);if(!p)return;sgPlace=id;$("#sgP").textContent=p.name;$("#sgPrev").innerHTML=placeBody(p);$("#sgF").reset();$("#sgE").textContent="";sg.showModal();$("#sgT").focus()},"Hãy đăng nhập để gửi góp ý cho địa điểm.")}
-$("#sgF").onsubmit=async ev=>{ev.preventDefault();const text=$("#sgT").value.trim(),n=$("#sgN").value.trim();let u=$("#sgU").value.trim();
-  if(u&&!/^https?:\/\//i.test(u))u="https://"+u;if(!text&&!n&&!u){$("#sgE").textContent="Hãy nhập nội dung góp ý.";return}
-  try{apply(await api("store",{op:"suggest",placeId:sgPlace,text,spots:n||u?[{n,u,c:""}]:[]}));sg.close();toast("Đã gửi góp ý. Quản trị viên sẽ xem và cập nhật vào địa điểm.")}catch(e){$("#sgE").textContent=e.message}};
+/* Mỗi vị trí góp ý: tên, link Google, nội dung góp ý (= ghi chú vị trí khi quản trị viên đưa vào địa điểm) */
+function addSgSpot(){const d=document.createElement("div");d.className="spot";
+  d.innerHTML=`<div class="spot-h"><b></b><button type="button" class="pill sm danger" data-sx>Bỏ</button></div>
+<label>Tên vị trí<input class="sn" maxlength="80" placeholder="Ví dụ: Bãi Sau"></label>
+<label>Link Google Maps<input class="su" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
+<label>Nội dung góp ý (ghi chú vị trí)<textarea class="sc" rows="2" maxlength="300" placeholder="Ví dụ: Nên đi buổi chiều, có bãi giữ xe miễn phí…"></textarea></label>`;
+  d.querySelector("[data-sx]").onclick=()=>{d.parentNode.removeChild(d);numSg()};$("#sgSpots").append(d);numSg();return d}
+function numSg(){$$("#sgSpots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Vị trí góp ý "+(i+1))}
+$("#sgSpotAdd").onclick=()=>addSgSpot().querySelector(".sn").focus();
+function openSuggest(id){requireLogin(()=>{const p=places.find(x=>x.id===id);if(!p)return;sgPlace=id;$("#sgP").textContent=p.name;$("#sgPrev").innerHTML=placeBody(p);$("#sgF").reset();$("#sgSpots").innerHTML="";addSgSpot();$("#sgE").textContent="";sg.showModal();$("#sgSpots .sn").focus()},"Hãy đăng nhập để gửi góp ý cho địa điểm.")}
+$("#sgF").onsubmit=async ev=>{ev.preventDefault();const text=$("#sgT").value.trim(),spots=[];
+  for(const d of $$("#sgSpots .spot")){const n=d.querySelector(".sn").value.trim(),c=d.querySelector(".sc").value.trim();let u=d.querySelector(".su").value.trim();
+    if(!n&&!u&&!c)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u)){$("#sgE").textContent="Link Google không hợp lệ: "+u;return}spots.push({n,u,c})}
+  if(!text&&!spots.length){$("#sgE").textContent="Hãy nhập ít nhất 1 vị trí hoặc nội dung góp ý.";return}
+  try{apply(await api("store",{op:"suggest",placeId:sgPlace,text,spots}));sg.close();toast("Đã gửi góp ý. Quản trị viên sẽ xem và cập nhật vào địa điểm.")}catch(e){$("#sgE").textContent=e.message}};
 
 /* ===== Thông báo đẩy (Web Push) ===== */
 const UA=navigator.userAgent;

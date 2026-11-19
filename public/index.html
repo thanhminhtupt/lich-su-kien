@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
-<link rel="stylesheet" href="/css/styles.css?v=2.3.1">
+<link rel="stylesheet" href="/css/styles.css?v=2.3.2">
 </head>
 <body>
 <header class="hdr">
@@ -102,6 +102,7 @@
   <section class="card places" aria-label="Ghi chú địa điểm">
     <div class="sec-h">
       <h2>Ghi chú địa điểm<span class="badge ok" id="pCount"></span></h2>
+      <span class="sp"></span><button class="pill sm" id="pToggle" hidden>Thu gọn tất cả</button>
       <button class="pill filled blue" id="pAdd">+ Thêm địa điểm</button>
     </div>
     <input type="search" id="pSearch" class="search" placeholder="Tìm địa điểm hoặc ghi chú…" aria-label="Tìm địa điểm" autocomplete="off">
@@ -115,7 +116,7 @@
       <h2>Chia sẻ & cài ứng dụng</h2>
       <p class="note">Quét mã QR hoặc gửi liên kết cho người khác.</p>
       <div class="lk">https://lich-su-kien.vercel.app/</div>
-      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="pill green" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
+      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button></div>
       <div class="inst">
         <button class="pill filled green" id="iconBtn"><img src="/assets/icon-192.png" alt="" width="26" height="26">Tạo Icon Màn Hình</button>
         <div class="note" id="iconHint">Thêm Lịch Sự Kiện ra màn hình chính điện thoại như một ứng dụng.</div>
@@ -157,7 +158,7 @@
   <div class="visits" id="visits" aria-label="Lượt truy cập"></div>
   <div>Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
   <div id="sync"></div>
-  <div class="ver">Phiên bản 2.3.1</div>
+  <div class="ver">Phiên bản 2.3.2</div>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -316,6 +317,6 @@
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
 </div></dialog>
 
-<script src="/js/app.js?v=2.3.1" defer></script>
+<script src="/js/app.js?v=2.3.2" defer></script>
 </body>
 </html>

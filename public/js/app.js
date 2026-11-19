@@ -109,7 +109,10 @@ const crossY=e=>e.m2<e.m||(e.m2===e.m&&e.b<e.a);
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.m2===e.m?(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m:e.a+"/"+e.m+" – "+e.b+"/"+e.m2);
 const repTxt=e=>e.repeat?(e.every===2?"2 năm/lần · từ "+e.year:"Hằng năm"):"Một lần · năm "+e.year;
 const spotsHtml=e=>(e.spots||[]).map(s=>`<span class="evs">${esc(s.n||"")}${s.n&&s.u?" - ":""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}</span>`).join("");
-const repIcon=e=>!e.repeat?"1️⃣":e.every===2?"2️⃣":"🔁";
+const RI={y:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 7V6a2.5 2.5 0 0 1 2.5-2.5H12M10 1.5l2 2-2 2M13 9v1a2.5 2.5 0 0 1-2.5 2.5H4M6 14.5l-2-2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  o:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 6l1.3-1v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  t:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.2 6.2a1.8 1.8 0 0 1 3.5.5c0 1.3-3.6 2.4-3.6 4.3h3.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
+const repIcon=e=>!e.repeat?RI.o:e.every===2?RI.t:RI.y;
 const repCls=e=>!e.repeat?"t-o":e.every===2?"t-t":"t-y";
 const repChip=(e,c="chip")=>`<span class="${c} ${repCls(e)}">${repIcon(e)} ${esc(repTxt(e))}</span>`;
 const yearOk=(e,y)=>e.repeat?(e.every===2?(((y-e.year)%2)+2)%2===0:true):e.year===y;
@@ -471,6 +474,10 @@ const PROV=[["Hà Nội"],["TP. Hồ Chí Minh",["TP. Hồ Chí Minh","Bà Rịa
  ["Lai Châu"],["Điện Biên"],["Sơn La"],["Lạng Sơn"],["Quảng Ninh"],["Thanh Hóa"],["Nghệ An"],["Hà Tĩnh"],["Cao Bằng"]];
 const provName=i=>i>=1&&i<=34?PROV[i-1][0]:"";
 let provF=0;
+/* Tỉnh đang thu gọn (nhớ trên máy). Mặc định: thu gọn tất cả cho gọn */
+const pClosed=new Set();let pcInit=false;
+try{const v=JSON.parse(ls.get("lich-pclosed")||"null");if(Array.isArray(v)){v.forEach(x=>pClosed.add(+x));pcInit=true}}catch{}
+function savePC(){ls.set("lich-pclosed",JSON.stringify([...pClosed]))}
 
 const pl=$("#pl");let editingP=null,mergeS=null;const openP=new Set();
 const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
@@ -479,7 +486,7 @@ function placeBody(p){let x="";const sp=p.spots||[];
   if(p.note)x+=`<div class="pnote"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
 function placeRow(p,adm){const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · "),sg=suggestions.filter(s=>s.placeId===p.id),canSg=!adm&&!p.mine;
-  return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${p.sub&&p.prov&&PROV[p.prov-1][1]?` <span class="chip subc">${esc(p.sub)}</span>`:""}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}`+
+  return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}`+
     (sg.length?`<div class="sgs"><div class="sgh">${adm?"Góp ý của thành viên":"Góp ý của bạn"}</div>${sg.map(s=>sugHtml(s,adm)).join("")}</div>`:"")+
     (canSg?`<div class="sgcta"><div><b>Bạn biết thêm về địa điểm này?</b><span>Góp ý sẽ đính kèm vào địa điểm để quản trị viên cập nhật cho đầy đủ hơn.</span></div><button type="button" class="pill filled blue" data-sg="${esc(p.id)}">💬 Góp ý thêm</button></div>`:"")+
     (p.byName&&adm?byLine(p):"")+ownActs(p,"places")+`</div></details>`}
@@ -489,14 +496,22 @@ function renderPlaces(){const q=nrm($("#pSearch").value.trim()),adm=isAdmin();
   const byName=(a,b)=>a.name.localeCompare(b.name,"vi",{numeric:true,sensitivity:"base"});
   const M=plA.filter(p=>!q||nrm(txt(p)).includes(q)),groups=new Map();
   for(const p of M){const k=p.prov||0;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(p)}
+  if(!pcInit&&plA.length){pcInit=true;for(let i=0;i<=34;i++)pClosed.add(i)}
   const keys=[...groups.keys()].sort((a,b)=>(a||99)-(b||99));if(provF&&!groups.has(provF))provF=0;
   $("#pCount").textContent=q?`${M.length}/${plA.length}`:plA.length;
   $("#pAdd").textContent=me&&!adm?"+ Gửi địa điểm mới":"+ Thêm địa điểm";
   $("#pProvs").innerHTML=keys.length>1?`<button type="button" class="pv-chip${provF?"":" on"}" data-prov="0">Tất cả <b>${M.length}</b></button>`+keys.map(k=>`<button type="button" class="pv-chip${provF===k?" on":""}" data-prov="${k}">${k?esc(provName(k)):"Chưa chọn tỉnh"} <b>${groups.get(k).length}</b></button>`).join(""):"";
   $("#pList").innerHTML=M.length?keys.filter(k=>!provF||k===provF).map(k=>{const L=groups.get(k).sort((a,b)=>(a.sub||"").localeCompare(b.sub||"","vi")||byName(a,b));
-    return`<section class="pgrp"><h3 class="pgh"><span class="pno">${k||"?"}</span><span class="pgt">${k?esc(provName(k)):"Chưa chọn tỉnh"}${k&&PROV[k-1][1]?`<small>${esc(PROV[k-1][1].join(" · "))}</small>`:""}</span><span class="badge ok">${L.length}</span></h3>${!k&&adm?'<div class="note sm">Bấm Sửa từng địa điểm để chọn tỉnh cho đúng.</div>':""}<div class="plist">${L.map(p=>placeRow(p,adm)).join("")}</div></section>`}).join("")
+    const open=!!q||provF===k||!pClosed.has(k),subs=k&&PROV[k-1][1];
+    let body;if(subs){const bySub=new Map();for(const p of L){const sk=p.sub||"";if(!bySub.has(sk))bySub.set(sk,[]);bySub.get(sk).push(p)}
+      const order=[...subs,""].filter(x=>bySub.has(x));body=order.map(sk=>`<div class="psub"><div class="psh">${sk?esc(sk):"Chưa chọn khu vực"}<span>${bySub.get(sk).length}</span></div><div class="plist">${bySub.get(sk).map(p=>placeRow(p,adm)).join("")}</div></div>`).join("")}
+    else body=`<div class="plist">${L.map(p=>placeRow(p,adm)).join("")}</div>`;
+    return`<section class="pgrp${open?" open":""}"><button type="button" class="pgh" data-pg="${k}" aria-expanded="${open}"><span class="pno">${k||"?"}</span><span class="pgt"><b>${k?esc(provName(k)):"Chưa chọn tỉnh"}</b>${subs?`<small>${esc(subs.join(" · "))}</small>`:""}</span><span class="badge ok">${L.length}</span><span class="chev" aria-hidden="true">›</span></button><div class="pgb">${!k&&adm?'<div class="note sm">Bấm Sửa từng địa điểm để chọn tỉnh cho đúng.</div>':""}${body}</div></section>`}).join("")
     :`<div class="empty">${plA.length?"Không tìm thấy địa điểm phù hợp.":"Chưa có ghi chú địa điểm nào."}</div>`;
-  $$("#pProvs [data-prov]").forEach(b=>b.onclick=()=>{provF=+b.dataset.prov;renderPlaces()});
+  $$("#pProvs [data-prov]").forEach(b=>b.onclick=()=>{provF=+b.dataset.prov;if(provF)pClosed.delete(provF);renderPlaces()});
+  $$("#pList [data-pg]").forEach(b=>b.onclick=()=>{const k=+b.dataset.pg;pClosed.has(k)?pClosed.delete(k):pClosed.add(k);savePC();renderPlaces()});
+  const allK=keys,allClosed=allK.every(k=>pClosed.has(k));$("#pToggle").hidden=!M.length||!!q;$("#pToggle").textContent=allClosed?"Mở tất cả":"Thu gọn tất cả";
+  $("#pToggle").onclick=()=>{if(allClosed)allK.forEach(k=>pClosed.delete(k));else allK.forEach(k=>pClosed.add(k));savePC();renderPlaces()};
   $$("details.pd").forEach(d=>d.addEventListener("toggle",()=>{d.open?openP.add(d.dataset.id):openP.delete(d.dataset.id)}));
   bindActs($("#pList"))}
 /* Chọn tỉnh (1–34) → hiện các tỉnh cũ trong đó để tick chọn */
@@ -534,7 +549,7 @@ function openPlace(p,s){editingP=p?p.id:null;mergeS=s||null;$("#plTitle").textCo
 $("#plN").addEventListener("input",plDupCheck);
 $("#plDup").addEventListener("click",ev=>{const v=ev.target.closest("[data-view-pl]"),g=ev.target.closest("[data-sg-pl]");
   if(v){pl.close();showPlace(v.dataset.viewPl)}else if(g){pl.close();openSuggest(g.dataset.sgPl)}});
-function showPlace(id){location.hash="";$("#pSearch").value="";openP.add(id);renderPlaces();const d=document.querySelector(`details.pd[data-id="${CSS.escape(id)}"]`);if(d){d.open=true;d.scrollIntoView({behavior:"smooth",block:"center"});d.classList.add("flash");setTimeout(()=>d.classList.remove("flash"),1600)}}
+function showPlace(id){location.hash="";$("#pSearch").value="";openP.add(id);{const p=places.find(x=>x.id===id);if(p)pClosed.delete(p.prov||0)}renderPlaces();const d=document.querySelector(`details.pd[data-id="${CSS.escape(id)}"]`);if(d){d.open=true;d.scrollIntoView({behavior:"smooth",block:"center"});d.classList.add("flash");setTimeout(()=>d.classList.remove("flash"),1600)}}
 $("#pAdd").onclick=()=>requireLogin(()=>openPlace(null),"Hãy đăng nhập để thêm địa điểm. Chưa có tài khoản? Bấm Tạo tài khoản.");
 $("#pSearch").addEventListener("input",renderPlaces);
 $("#plF").onsubmit=async ev=>{ev.preventDefault();

@@ -478,3 +478,28 @@ dialog{background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdro
 .subc2 input:focus-visible+span{outline:2px solid #007aff;outline-offset:2px}
 #sgSpots{display:grid;gap:10px}
 .ver{font-size:.78rem;opacity:.7}
+
+/* ===== Bản 2.3.2 ===== */
+/* Chỉ tên sự kiện in đậm, các dòng còn lại chữ thường */
+.rem .rb>b,.mi .rb>b{font-weight:700}
+.rb small.dl,.eb small.dl{font-weight:400}
+.rb small.dl b,.eb small.dl b{font-weight:400}
+.cnt b,.dt b{font-weight:600}
+.cnt small,.dt small{font-weight:400}
+.chip,.tag{font-weight:500}
+.chips .chip,.rem .chip,.mi .chip{font-weight:500}
+/* Biểu tượng lặp lại tinh tế (nét mảnh kiểu SF Symbols) */
+.ri{width:13px;height:13px;vertical-align:-2px;margin-right:3px;flex:none}
+/* Nhóm tỉnh: bấm tên tỉnh để mở / thu gọn */
+.sec-h .sp{flex:1}
+.pgh{width:100%;justify-content:flex-start;text-align:left;min-height:52px;color:var(--text);font-weight:400;border-radius:16px;box-shadow:none;border:0;padding:8px 12px;background:color-mix(in srgb,#007aff 10%,transparent)}
+.pgh .pgt b{font-size:1.08rem;font-weight:700}
+.pgt small{font-size:1rem!important;font-weight:500!important;color:color-mix(in srgb,var(--text) 72%,transparent)!important}
+.chev{font-size:1.5rem;color:var(--mute);transform:rotate(0deg);transition:transform .2s;line-height:1;margin-left:4px}
+.pgrp.open .chev{transform:rotate(90deg)}
+.pgrp .pgb{display:none;padding:2px 4px 6px}
+.pgrp.open .pgb{display:block}
+.psub{margin-top:8px}
+.psh{display:flex;align-items:center;gap:8px;font-weight:700;color:#067a05;padding:6px 4px 2px;border-bottom:.5px solid var(--line)}
+@media(prefers-color-scheme:dark){.psh{color:#4cd964}}
+.psh span{font-size:.8rem;font-weight:600;color:var(--mute);background:var(--fill);border-radius:999px;padding:0 8px}

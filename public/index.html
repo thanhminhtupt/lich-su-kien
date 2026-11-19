@@ -5,33 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Lịch Sự Kiện</title>
-<meta name="description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm hoặc một lần, kèm dự báo thời tiết.">
+<meta name="description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm hoặc một lần, ghi chú địa điểm, thông báo đẩy.">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0b0e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Lịch Sự Kiện">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Lịch Sự Kiện – by Đức Anh Hoàng">
-<meta property="og:description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm, ghi chú địa điểm và thời tiết.">
+<meta property="og:description" content="Lịch sự kiện âm dương, nhắc lịch hằng năm, ghi chú địa điểm.">
 <meta property="og:image" content="https://lich-su-kien.vercel.app/assets/icon-512.png">
 <meta property="og:url" content="https://lich-su-kien.vercel.app/">
 <meta name="twitter:card" content="summary">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
 <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 <header class="hdr">
-  <div class="brand">
-    <div class="ttl"><h1>LỊCH SỰ KIỆN</h1><span class="tp">thanhminhtupt</span></div>
-    <button class="pill red" id="addBtn">+ Thêm sự kiện</button>
-    <div class="stor" id="stor" aria-live="polite"></div>
+  <div class="hdr-in">
+    <div class="brand">
+      <img class="logo" src="/assets/icon.svg" alt="" width="40" height="40">
+      <div class="ttl"><h1>Lịch Sự Kiện</h1><span class="tp">thanhminhtupt</span></div>
+    </div>
+    <div class="hr">
+      <button class="bell" id="bell" aria-label="Thông báo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="currentColor"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="n" id="bellN" hidden>0</span></button>
+      <div class="acc" id="accBox">
+        <button class="pill primary" id="loginBtn">Đăng nhập</button>
+        <div class="who" id="who" hidden>
+          <button class="avatar" id="meBtn" aria-label="Tài khoản"><span id="meIni">A</span></button>
+          <span class="sess" id="sessT" title="Phiên làm việc còn lại">20:00</span>
+          <button class="pill sm" id="logoutBtn">Đăng xuất</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="hr"><button class="bell" id="bell" aria-label="Thông báo sắp tới"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="#f5b400" stroke="#c98d00" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="#c98d00" stroke-width="1.4" stroke-linecap="round"/></svg><span class="n" id="bellN" hidden>0</span></button><a class="by" href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
 </header>
 <noscript><div class="card">Trang cần bật JavaScript để hoạt động.</div></noscript>
+
+<div class="toolbar">
+  <button class="pill filled red" id="addBtn">+ Thêm sự kiện</button>
+  <button class="pill orange" id="reviewBtn" hidden>Cần duyệt <span class="cnt0" id="reviewN">0</span></button>
+  <div class="stor" id="stor" aria-live="polite"></div>
+</div>
 
 <main class="layout" id="mainView">
   <section class="card today" aria-label="Hôm nay">
@@ -45,15 +64,13 @@
 
   <div class="strip">
     <a class="wlink" href="https://www.google.com/search?q=thoi+tiet+h%C3%B4m+nay" target="_blank" rel="noopener noreferrer">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3.6" fill="#f5b400"/><path d="M9 2.6v1.6M2.6 9h1.6M4.5 4.5l1.1 1.1M13.5 4.5l-1.1 1.1" stroke="#f5b400" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .4-6.97A4.6 4.6 0 0 0 9 13a3.2 3.2 0 0 0-.5 6.5Z" fill="#fff" stroke="#6b8fc7" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3.6" fill="#ffcc00"/><path d="M9 2.6v1.6M2.6 9h1.6M4.5 4.5l1.1 1.1M13.5 4.5l-1.1 1.1" stroke="#ffcc00" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .4-6.97A4.6 4.6 0 0 0 9 13a3.2 3.2 0 0 0-.5 6.5Z" fill="#fff" stroke="#64a0ff" stroke-width="1.5" stroke-linejoin="round"/></svg>
       <span>Thời tiết hôm nay</span><span class="ext" aria-hidden="true">↗</span>
     </a>
     <span class="sp"></span>
     <button class="pill yellow" id="reloadBtn">Load lại trang</button>
-    <button class="pill junk" id="cleanBtn">Xoá dữ liệu rác cũ</button>
+    <button class="pill danger" id="cleanBtn">Xoá dữ liệu rác cũ</button>
   </div>
-
-  
 
   <section class="card cal" aria-label="Lịch tháng">
     <div class="bar">
@@ -62,7 +79,7 @@
       <select id="ySel" aria-label="Năm"></select>
       <button class="ic" id="next" aria-label="Tháng sau">›</button>
       <span class="sp"></span>
-      <button class="pill" id="goToday">Hôm nay</button>
+      <button class="pill primary" id="goToday">Hôm nay</button>
     </div>
     <div class="grid" id="cal"></div>
     <div class="detail" id="detail"></div>
@@ -74,35 +91,49 @@
   </section>
 
   <section class="card remind" aria-label="Sắp tới">
-    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2></div>
-    <div class="btns tools"><button class="swt" id="perm" role="switch" aria-checked="false"><span class="lbl">Thông báo</span><span class="trk"><span class="knob"></span></span></button><a class="abtn purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp sự kiện</a></div>
+    <div class="sec-h"><h2>Sắp tới<span class="badge" id="nb" hidden></span></h2><a class="pill purple" href="https://zalo.me/0904817613" target="_blank" rel="noopener noreferrer">Đóng góp qua Zalo</a></div>
     <div id="notes"></div>
     <button class="pill orange full" id="allBtn">Tất cả các sự kiện</button>
+  </section>
+
+  <section class="card pushc" id="pushCard" aria-label="Thông báo trên điện thoại">
+    <h2 class="ph"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="#ff9500"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="#ff9500" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Thông báo trên điện thoại</h2>
+    <p class="pdesc">Mỗi sáng khoảng <b>7:00 – 8:00</b>, nếu có sự kiện trong 7 ngày tới hoặc thông báo chưa đọc, máy chủ gửi 1 thông báo (hiện cả trên màn hình khoá) và đặt <b>số trên icon app</b> bằng đúng số ở chuông. Khi có lịch hoặc địa điểm cần duyệt, đã được duyệt, hay có góp ý mới, bạn cũng nhận thông báo ngay.</p>
+    <div class="pstat" id="pStat"></div>
+    <div class="pbtns">
+      <button class="pill filled blue big" id="pOn"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="currentColor"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Bật thông báo trên máy này</button>
+      <div class="two-b"><button class="pill primary" id="pTest">Gửi thử thông báo</button><button class="pill danger" id="pOff">Tắt trên máy này</button></div>
+    </div>
+    <div class="pdev" id="pDev"></div>
   </section>
 
   <section class="card places" aria-label="Ghi chú địa điểm">
     <div class="sec-h">
       <h2>Ghi chú địa điểm<span class="badge ok" id="pCount"></span></h2>
-      <button class="pill primary" id="pAdd">+ Thêm địa điểm</button>
+      <button class="pill filled blue" id="pAdd">+ Thêm địa điểm</button>
     </div>
     <input type="search" id="pSearch" class="search" placeholder="Tìm địa điểm hoặc ghi chú…" aria-label="Tìm địa điểm" autocomplete="off">
     <div class="plist" id="pList"></div>
   </section>
 
-  <section class="card share" aria-label="Chia sẻ ứng dụng">
+  <section class="card share" aria-label="Chia sẻ và cài ứng dụng">
     <img class="qr" src="/assets/qr.svg" alt="Mã QR mở ứng dụng Lịch Sự Kiện">
     <div class="sh">
-      <h2>Chia sẻ ứng dụng</h2>
+      <h2>Chia sẻ & cài ứng dụng</h2>
       <p class="note">Quét mã QR hoặc gửi liên kết cho người khác.</p>
       <div class="lk">https://lich-su-kien.vercel.app/</div>
-      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="abtn green" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
+      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button><a class="pill green" href="/assets/qr.svg" download="qr-lich-su-kien.svg">Tải mã QR</a></div>
+      <div class="inst">
+        <button class="pill filled green big" id="iconBtn"><img src="/assets/icon-192.png" alt="" width="26" height="26">Tạo Icon Màn Hình</button>
+        <div class="note" id="iconHint">Thêm Lịch Sự Kiện ra màn hình chính điện thoại như một ứng dụng.</div>
+      </div>
     </div>
   </section>
 </main>
 
 <section class="layout page" id="allPage" aria-label="Tất cả các sự kiện" hidden>
-  <div class="card" style="grid-column:1/-1">
-    <div class="sec-h"><button class="pill" id="backBtn">‹ Quay lại</button><div class="btns"><button class="pill primary" id="addBtn2">+ Thêm sự kiện</button><button class="pill green" id="bkBtn">Sao lưu (tải về)</button></div></div>
+  <div class="card">
+    <div class="sec-h"><button class="pill" id="backBtn">‹ Quay lại</button><div class="btns"><button class="pill filled red" id="addBtn2">+ Thêm sự kiện</button><button class="pill green" id="bkBtn">Sao lưu (tải về)</button></div></div>
     <h2 class="ptitle">Tất cả các sự kiện<span class="badge ok" id="aCount"></span></h2>
     <div class="note">Sự kiện hằng năm, sự kiện 2 năm một lần và địa điểm luôn được giữ lại. Sự kiện một lần chỉ tự xoá sau khi đã kết thúc 30 ngày.</div>
     <input type="search" id="aSearch" class="search" placeholder="Tìm sự kiện…" aria-label="Tìm sự kiện" autocomplete="off">
@@ -110,51 +141,142 @@
   </div>
 </section>
 
-<div class="iconrow"><button class="pill green" id="iconBtn">Tạo Icon Màn Hình</button></div>
+<section class="layout page" id="revPage" aria-label="Duyệt bài" hidden>
+  <div class="card">
+    <div class="sec-h"><button class="pill" id="revBack">‹ Quay lại</button></div>
+    <h2 class="ptitle" id="revTitle">Cần duyệt</h2>
+    <div class="note" id="revNote"></div>
+    <div id="revList"></div>
+  </div>
+</section>
 
-<footer class="foot">Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a><div id="sync"></div></footer>
+<footer class="foot">
+  <div class="visits" id="visits" aria-label="Lượt truy cập"></div>
+  <div>Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
+  <div id="sync"></div>
+</footer>
 
-<dialog id="pw"><form id="pwF" class="sheet">
-  <h2>Nhập mật khẩu</h2>
-  <input type="password" id="pwI" autocomplete="off" placeholder="Mật khẩu">
-  <div class="err" id="pwE"></div>
-  <div class="acts"><button type="button" class="pill" data-close>Huỷ</button><button class="pill primary">Xác nhận</button></div>
-</form></dialog>
+<div class="banner" id="instBar" hidden>
+  <img src="/assets/icon-192.png" alt="" width="44" height="44">
+  <div class="bt"><b>Thêm Lịch Sự Kiện ra màn hình chính</b><span id="instBarT">Mở nhanh như ứng dụng, nhận thông báo và số trên icon.</span></div>
+  <button class="pill filled blue sm" id="instYes">Thêm</button>
+  <button class="x" id="instNo" aria-label="Để sau">✕</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- Tài khoản: đăng nhập / đăng ký / quên mật khẩu / đặt lại / đổi mật khẩu -->
+<dialog id="acc"><div class="sheet">
+  <div class="seg tabs" id="accTabs"><button type="button" data-v="login" class="on">Đăng nhập</button><button type="button" data-v="signup">Tạo tài khoản</button></div>
+  <form id="fLogin" data-view="login">
+    <h2>Đăng nhập</h2>
+    <label>Email hoặc tên đăng nhập<input id="liId" autocomplete="username" required maxlength="120" placeholder="ban@gmail.com"></label>
+    <label>Mật khẩu<input id="liPw" type="password" autocomplete="current-password" required maxlength="100"></label>
+    <div class="err"></div>
+    <button class="pill filled blue big">Đăng nhập</button>
+    <button type="button" class="link" data-go="forgot">Quên mật khẩu?</button>
+    <p class="note sm">Phiên làm việc tự kết thúc sau 20 phút không thao tác.</p>
+  </form>
+  <form id="fSignup" data-view="signup" hidden>
+    <h2>Tạo tài khoản</h2>
+    <label>Tên hiển thị<input id="suName" autocomplete="name" required maxlength="60" placeholder="Ví dụ: Minh Anh"></label>
+    <label>Email<input id="suEmail" type="email" autocomplete="email" required maxlength="120" placeholder="ban@gmail.com"></label>
+    <label>Mật khẩu (ít nhất 6 ký tự)<input id="suPw" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+    <label>Nhập lại mật khẩu<input id="suPw2" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+    <div class="err"></div>
+    <button class="pill filled blue big">Tạo tài khoản</button>
+    <p class="note sm">Thành viên có thể gửi lịch, địa điểm và góp ý. Quản trị viên duyệt trước khi hiển thị.</p>
+  </form>
+  <form id="fForgot" data-view="forgot" hidden>
+    <h2>Quên mật khẩu</h2>
+    <p class="note">Nhập đúng email đã đăng ký, app sẽ gửi liên kết đặt lại mật khẩu vào email đó.</p>
+    <label>Email<input id="fgEmail" type="email" autocomplete="email" required maxlength="120"></label>
+    <div class="err"></div><div class="okm"></div>
+    <button class="pill filled blue big">Gửi email đặt lại mật khẩu</button>
+    <button type="button" class="link" data-go="login">‹ Quay lại đăng nhập</button>
+  </form>
+  <form id="fReset" data-view="reset" hidden>
+    <h2>Đặt mật khẩu mới</h2>
+    <label>Mật khẩu mới<input id="rsPw" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+    <label>Nhập lại mật khẩu mới<input id="rsPw2" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+    <div class="err"></div>
+    <button class="pill filled blue big">Lưu mật khẩu mới</button>
+  </form>
+  <div data-view="me" hidden>
+    <div class="mecard"><span class="avatar lg" id="meIni2">A</span><div><b id="meName"></b><div class="note" id="meMail"></div><span class="role" id="meRole"></span></div></div>
+    <div class="note sm" id="meSess"></div>
+    <form id="fName" class="inline">
+      <label>Tên hiển thị<input id="pfName" required maxlength="60"></label>
+      <label id="pfMailW" hidden>Email khôi phục của quản trị viên<input id="pfMail" type="email" maxlength="120" placeholder="email để dùng Quên mật khẩu"></label>
+      <div class="err"></div>
+      <button class="pill primary">Lưu</button>
+    </form>
+    <form id="fPw">
+      <h3>Đổi mật khẩu</h3>
+      <label>Mật khẩu hiện tại<input id="cpOld" type="password" autocomplete="current-password" required maxlength="100"></label>
+      <label>Mật khẩu mới<input id="cpNew" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+      <label>Nhập lại mật khẩu mới<input id="cpNew2" type="password" autocomplete="new-password" required minlength="6" maxlength="100"></label>
+      <div class="err"></div><div class="okm"></div>
+      <button class="pill primary">Đổi mật khẩu</button>
+    </form>
+    <button class="pill danger big" id="logout2">Đăng xuất</button>
+  </div>
+  <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
+</div></dialog>
+
+<!-- Thông báo -->
+<dialog id="nt"><div class="sheet">
+  <div class="sec-h"><h2>Thông báo</h2><button type="button" class="pill sm" id="ntClear" hidden>Xoá hết</button></div>
+  <div id="ntRev"></div>
+  <div id="ntList"></div>
+  <h3 class="sub">Sự kiện trong 7 ngày tới</h3>
+  <div id="ntUp"></div>
+  <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
+</div></dialog>
 
 <dialog id="ed"><div class="sheet">
   <form id="evF">
     <h2 id="fTitle">Thêm sự kiện mới</h2>
+    <div class="note pendn" id="fPend" hidden>Sự kiện bạn gửi sẽ hiển thị sau khi quản trị viên duyệt.</div>
     <label>Tên sự kiện<input id="fN" required maxlength="80"></label>
+    <div class="dupbox" id="fDup" hidden></div>
 
-    <div class="two">
-      <fieldset class="seg"><legend>Loại ngày</legend>
-        <label><input type="radio" name="cal" value="l" checked><span>Âm lịch</span></label>
-        <label><input type="radio" name="cal" value="s"><span>Dương lịch</span></label>
-      </fieldset>
-      <fieldset class="seg wide"><legend>Lặp lại</legend>
-        <label><input type="radio" name="rep" value="y" checked><span>Hằng năm</span></label>
-        <label><input type="radio" name="rep" value="t"><span>2 năm / lần</span></label>
-        <label><input type="radio" name="rep" value="o"><span>Một lần</span></label>
-      </fieldset>
-    </div>
+    <fieldset class="seg"><legend>Loại ngày</legend>
+      <label><input type="radio" name="cal" value="l" checked><span>Âm lịch</span></label>
+      <label><input type="radio" name="cal" value="s"><span>Dương lịch</span></label>
+    </fieldset>
+    <fieldset class="seg"><legend>Lặp lại</legend>
+      <label><input type="radio" name="rep" value="y" checked><span>Hằng năm</span></label>
+      <label><input type="radio" name="rep" value="t"><span>2 năm / lần</span></label>
+      <label><input type="radio" name="rep" value="o"><span>Một lần</span></label>
+    </fieldset>
+    <fieldset class="seg"><legend>Ngày diễn ra</legend>
+      <label><input type="radio" name="dm" value="1" checked><span>Vào ngày</span></label>
+      <label><input type="radio" name="dm" value="r"><span>Từ ngày đến ngày</span></label>
+    </fieldset>
 
-    <div class="row">
-      <label>Tháng<select id="fM"></select></label>
-      <label>Từ ngày<input id="fA" type="number" inputmode="numeric" min="1" max="30" required></label>
-      <label>Đến ngày<input id="fB" type="number" inputmode="numeric" min="1" max="30" required></label>
+    <!-- Dương lịch: chọn ngày bằng lịch -->
+    <div class="row2" id="solarW">
+      <label><span class="dl1">Ngày</span><input id="fD1" type="date"></label>
+      <label class="rng"><span>Đến ngày</span><input id="fD2" type="date"></label>
     </div>
-    <label id="fYw" hidden><span id="fYl">Năm âm lịch</span><input id="fY" type="number" inputmode="numeric" min="2000" max="2100"></label>
+    <!-- Âm lịch: chọn ngày + tháng âm -->
+    <div id="lunarW">
+      <div class="lrow"><span class="lk2 dl1">Ngày</span><select id="fA" aria-label="Ngày âm (bắt đầu)"></select><select id="fM" aria-label="Tháng âm (bắt đầu)"></select></div>
+      <div class="lrow rng"><span class="lk2">Đến ngày</span><select id="fB" aria-label="Ngày âm (kết thúc)"></select><select id="fM2" aria-label="Tháng âm (kết thúc)"></select></div>
+      <label id="fYw" hidden><span id="fYl">Năm âm lịch</span><input id="fY" type="number" inputmode="numeric" min="1900" max="2200"></label>
+    </div>
     <div class="prev" id="fP"></div>
 
     <label>Giờ bắt đầu (tuỳ chọn)<input id="fT" type="time"></label>
     <div class="fsec"><div class="fsec-h">Địa điểm (tuỳ chọn)</div><div id="evSpots"></div><button type="button" class="pill green" id="evSpotAdd">+ Thêm địa điểm</button></div>
     <label>Ghi chú<textarea id="fC" rows="3" maxlength="500"></textarea></label>
-    <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button type="button" class="pill" id="fReset">Mới</button><button class="pill primary" id="fSave">Lưu sự kiện</button></div>
+    <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button type="button" class="pill" id="fReset">Mới</button><button class="pill filled blue" id="fSave">Lưu sự kiện</button></div>
   </form>
 </div></dialog>
 
 <dialog id="vd"><div class="sheet">
   <h2 id="vdN"></h2>
+  <div id="vdS"></div>
   <div id="vdB"></div>
   <div class="btns" id="vdRem"><button class="pill orange" id="vdIcs">🔔 Thêm lời nhắc (Lịch)</button><button class="pill purple" id="vdGcal" hidden>Google Calendar</button></div>
   <div class="note" id="vdHint">Lịch sẽ nhắc: trước 3 ngày, trước 1 ngày (lúc 8h sáng) và trước giờ diễn ra 1 tiếng. Sự kiện không có giờ: tính 6h sáng, nhắc lúc 5h sáng.</div>
@@ -163,15 +285,32 @@
 
 <dialog id="pl"><form id="plF" class="sheet">
   <h2 id="plTitle">Thêm địa điểm</h2>
-  <label>Tên địa điểm<input id="plN" required maxlength="80" placeholder="Ví dụ: Vũng Tàu"></label>
+  <div class="note pendn" id="plPend" hidden>Địa điểm bạn gửi sẽ hiển thị sau khi quản trị viên duyệt.</div>
+  <div class="mergen" id="plMerge" hidden></div>
+  <label>Tên địa điểm<input id="plN" required maxlength="80" placeholder="Ví dụ: Vũng Tàu" autocomplete="off"></label>
+  <div class="dupbox" id="plDup" hidden></div>
   <div id="spots"></div>
   <button type="button" class="pill green" id="spotAdd">+ Thêm vị trí</button>
   <label>Ghi chú địa điểm (tuỳ chọn)<textarea id="plC" rows="4" maxlength="1000" placeholder="Ví dụ: sáng đi làng chài"></textarea></label>
-  <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button class="pill primary">Lưu địa điểm</button></div>
+  <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button class="pill filled blue" id="plSave">Lưu địa điểm</button></div>
+</form></dialog>
+
+<dialog id="sg"><form id="sgF" class="sheet">
+  <h2>Góp ý cho địa điểm</h2>
+  <div class="note">Góp ý sẽ được đính kèm vào địa điểm <b id="sgP"></b> để quản trị viên xem và cập nhật cho đầy đủ hơn.</div>
+  <label>Nội dung góp ý<textarea id="sgT" rows="4" maxlength="1000" placeholder="Ví dụ: Nên đi buổi chiều, có bãi giữ xe miễn phí…"></textarea></label>
+  <div class="fsec"><div class="fsec-h">Thêm vị trí mới (tuỳ chọn)</div>
+    <label>Tên vị trí<input id="sgN" maxlength="80" placeholder="Ví dụ: Bãi Sau"></label>
+    <label>Link Google Maps<input id="sgU" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
+  </div>
+  <div class="err" id="sgE"></div>
+  <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button class="pill filled blue">Gửi góp ý</button></div>
 </form></dialog>
 
 <dialog id="ic"><div class="sheet">
   <h2>Tạo icon ngoài màn hình</h2>
+  <div class="icpv"><img src="/assets/icon-180.png" alt="Icon Lịch Sự Kiện"><div><b>Lịch Sự Kiện</b><div class="note">Mở nhanh như ứng dụng, nhận thông báo đẩy và số trên icon.</div></div></div>
+  <div class="seg tabs" id="icTabs"><button type="button" data-os="ios">iPhone / iPad</button><button type="button" data-os="and">Android</button><button type="button" data-os="pc">Máy tính</button></div>
   <div id="icB"></div>
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
 </div></dialog>

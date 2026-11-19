@@ -1,11 +1,16 @@
 {
   "name": "lich-su-kien",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Lịch sự kiện âm dương, ghi chú địa điểm",
+  "description": "Lịch sự kiện âm dương, ghi chú địa điểm, tài khoản thành viên, duyệt bài và thông báo đẩy",
   "scripts": {
-    "dev": "npx serve public",
-    "start": "npx serve public"
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
+    "vapid": "web-push generate-vapid-keys"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16",
+    "web-push": "^3.6.7"
   },
   "license": "MIT",
   "engines": {

@@ -1,29 +1,37 @@
 {
   "name": "Lịch Sự Kiện – by Đức Anh Hoàng",
   "short_name": "Lịch Sự Kiện",
-  "description": "Lịch sự kiện âm dương, nhắc lịch hằng năm, ghi chú địa điểm và thời tiết.",
+  "description": "Lịch sự kiện âm dương, nhắc lịch, ghi chú địa điểm, thông báo đẩy.",
   "lang": "vi",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f2f2f7",
-  "theme_color": "#2f8f00",
+  "theme_color": "#1f9d55",
   "icons": [
     {
       "src": "/assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/assets/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "id": "/",
@@ -37,6 +45,11 @@
       "name": "Tất cả các sự kiện",
       "short_name": "Tất cả",
       "url": "/#tat-ca"
+    },
+    {
+      "name": "Duyệt bài / Bài gửi của tôi",
+      "short_name": "Duyệt",
+      "url": "/#duyet"
     }
   ]
 }

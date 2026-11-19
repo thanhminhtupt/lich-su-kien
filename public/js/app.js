@@ -308,7 +308,7 @@ function resetForm(){editing=null;$("#evF").reset();lastCal="l";
   const l=toLunar(now.getDate(),now.getMonth()+1,now.getFullYear());$("#fA").value=$("#fB").value=Math.min(l.d,30);$("#fM").value=$("#fM2").value=l.m;$("#fY").value=l.y;
   $("#fD1").value=$("#fD2").value=isoD(now);
   $("#fSave").textContent=isAdmin()?"Lưu sự kiện":"Gửi để duyệt";$("#fTitle").textContent="Thêm sự kiện mới";$("#fPend").hidden=isAdmin();$("#evSpots").innerHTML="";syncForm()}
-$("#fReset").onclick=resetForm;
+$("#fNew").onclick=resetForm;
 $("#evF").addEventListener("input",syncForm);$("#evF").addEventListener("change",syncForm);
 function editEvent(id){const e=events.find(x=>x.id===id);if(!e)return;resetForm();editing=e.id;
   $("#fN").value=e.name;setRadio("rep",!e.repeat?"o":e.every===2?"t":"y");setRadio("dm",e.m2===e.m&&e.a===e.b?"1":"r");setRadio("cal",e.cal);lastCal=e.cal;
@@ -640,9 +640,9 @@ const inApp=/Zalo|FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|Messenger/i.test(UA);
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e;updInstall()});
 addEventListener("appinstalled",()=>{dip=null;updInstall();toast("Đã thêm Lịch Sự Kiện ra màn hình chính.")});
 function updInstall(){const b=$("#iconBtn"),h=$("#iconHint"),t=b.lastChild;
-  if(standalone()){t.textContent="Đã cài trên máy này";h.textContent="Bạn đang mở app từ icon màn hình chính.";return}
-  if(dip){t.textContent="Thêm vào màn hình chính ngay";h.textContent="Bấm 1 lần, máy sẽ hỏi Cài đặt / Thêm – icon tự xuất hiện ngoài màn hình.";return}
-  t.textContent="Tạo Icon Màn Hình";h.textContent=isIOS?"iPhone/iPad: bấm để xem 4 bước thêm icon bằng Safari (Apple không cho trang web tự thêm).":isAnd?"Android: bấm để thêm icon (Chrome sẽ tự hỏi nếu hỗ trợ, nếu không sẽ hiện hướng dẫn).":"Thêm Lịch Sự Kiện ra màn hình chính điện thoại như một ứng dụng."}
+  if(standalone()){t.textContent="Đã cài trên máy này";h.textContent="";return}
+  if(dip){t.textContent="Thêm vào màn hình chính ngay";h.textContent="";return}
+  t.textContent="Tạo Icon Màn Hình";h.textContent="";}
 async function install(){if(dip){const e=dip;dip=null;try{await e.prompt();const c=await e.userChoice;if(c&&c.outcome==="accepted")toast("Đang thêm icon ra màn hình chính…")}catch{}updInstall();return}openGuide()}
 $("#iconBtn").onclick=()=>{if(standalone())return openGuide();install()};
 const SV={share:'<svg class="ii" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',

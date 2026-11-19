@@ -534,3 +534,22 @@ dialog{background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdro
 .cal{grid-row:2/4}.month{grid-row:2}.remind{grid-row:3}.places{grid-row:4}.share{grid-row:5}
 @media(max-width:560px){.fab{width:36px;height:36px;min-height:36px;opacity:.85}.fab svg{width:18px;height:18px}}
 @media(min-width:861px){#mainView.layout{grid-template-rows:auto auto 1fr auto auto}}
+
+/* ===== Bản 2.3.4 ===== */
+.share{display:block;padding:14px 16px}
+.sharebtns{justify-content:center}
+.sharebtns img{border-radius:6px}
+#iconHint:empty{display:none}
+.foot .pushc{grid-column:auto;grid-row:auto;text-align:left;margin:4px auto 0;width:100%;border-top:0;padding:16px;box-sizing:border-box;color:var(--text)}
+.foot .stor{font-size:.85rem}
+/* Form sự kiện có màu */
+fieldset.seg.c-blue input:checked+span{background:#007aff;color:#fff;box-shadow:none}
+fieldset.seg.c-green input:checked+span{background:#0b9d0a;color:#fff;box-shadow:none}
+fieldset.seg.c-orange input:checked+span{background:#ff9500;color:#fff;box-shadow:none}
+fieldset.seg.c-blue legend{color:#007aff}fieldset.seg.c-green legend{color:#078f06}fieldset.seg.c-orange legend{color:#d97a00}
+#ed select{background-color:color-mix(in srgb,#007aff 9%,transparent)}
+#ed input[type=date],#ed input[type=time]{background:color-mix(in srgb,#ff9500 9%,transparent)}
+#ed .prev{background:color-mix(in srgb,#007aff 9%,transparent);padding:8px 12px;border-radius:12px}
+#ed .prev:empty{display:none}
+#ed .prev.bad{background:color-mix(in srgb,#ff0000 9%,transparent)}
+@media(prefers-color-scheme:dark){fieldset.seg.c-blue legend{color:#5aa9ff}fieldset.seg.c-green legend{color:#4cd964}fieldset.seg.c-orange legend{color:#ffb340}}

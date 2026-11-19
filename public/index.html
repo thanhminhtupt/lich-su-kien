@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
-<link rel="stylesheet" href="/css/styles.css?v=2.3.3">
+<link rel="stylesheet" href="/css/styles.css?v=2.3.4">
 </head>
 <body>
 <header class="hdr">
@@ -50,7 +50,6 @@
 <div class="toolbar">
   <button class="pill filled red" id="addBtn">+ Thêm sự kiện</button>
   <button class="pill orange" id="reviewBtn" hidden>Cần duyệt <span class="cnt0" id="reviewN">0</span></button>
-  <div class="stor" id="stor" aria-live="polite"></div>
   <span class="sp"></span>
   <div class="theme seg tabs" id="themeSeg" role="radiogroup" aria-label="Giao diện"><button type="button" data-th="light">☀︎ Sáng</button><button type="button" data-th="dark">☾ Tối</button><button type="button" data-th="auto">Auto</button></div>
 </div>
@@ -106,27 +105,8 @@
   </section>
 
   <section class="card share" aria-label="Chia sẻ và cài ứng dụng">
-    <img class="qr" src="/assets/qr.svg" alt="Mã QR mở ứng dụng Lịch Sự Kiện">
-    <div class="sh">
-      <h2>Chia sẻ & cài ứng dụng</h2>
-      <p class="note">Quét mã QR hoặc gửi liên kết cho người khác.</p>
-      <div class="lk">https://lich-su-kien.vercel.app/</div>
-      <div class="btns"><button class="pill primary" id="shBtn">Chia sẻ liên kết</button></div>
-      <div class="inst">
-        <button class="pill filled green" id="iconBtn"><img src="/assets/icon-192.png" alt="" width="26" height="26">Tạo Icon Màn Hình</button>
-        <div class="note" id="iconHint">Thêm Lịch Sự Kiện ra màn hình chính điện thoại như một ứng dụng.</div>
-      </div>
-  <div class="pushc" id="pushCard" aria-label="Thông báo trên điện thoại">
-        <h3 class="ph"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="#ff9500"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="#ff9500" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Thông báo trên điện thoại</h3>
-        <div class="pstat" id="pStat"></div>
-        <div class="pbtns">
-          <button class="pill filled blue" id="pOn"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="currentColor"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Bật thông báo trên máy này</button>
-          <div class="two-b"><button class="pill primary" id="pTest">Gửi thử thông báo</button><button class="pill danger" id="pOff">Tắt trên máy này</button></div>
-        </div>
-        <div class="pdev" id="pDev"></div>
-      </div>
-    
-    </div>
+    <div class="btns sharebtns"><button class="pill primary" id="shBtn"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Chia sẻ liên kết</button><button class="pill filled green" id="iconBtn"><img src="/assets/icon-192.png" alt="" width="24" height="24">Tạo Icon Màn Hình</button></div>
+    <div class="note sm" id="iconHint"></div>
   </section>
 </main>
 
@@ -152,9 +132,19 @@
 
 <footer class="foot">
   <div class="visits" id="visits" aria-label="Lượt truy cập"></div>
+    <div class="card pushc" id="pushCard" aria-label="Thông báo trên điện thoại">
+        <h3 class="ph"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="#ff9500"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="#ff9500" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Thông báo trên điện thoại</h3>
+        <div class="pstat" id="pStat"></div>
+        <div class="pbtns">
+          <button class="pill filled blue" id="pOn"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.6 5.6 0 0 0-5.6 5.6v3.1c0 .9-.3 1.7-.9 2.4L4.4 15.6c-.5.6-.1 1.5.7 1.5h13.8c.8 0 1.2-.9.7-1.5l-1.1-1.3a3.7 3.7 0 0 1-.9-2.4V8.8A5.6 5.6 0 0 0 12 3.2Z" fill="currentColor"/><path d="M9.6 19a2.6 2.6 0 0 0 4.8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>Bật thông báo trên máy này</button>
+          <div class="two-b"><button class="pill primary" id="pTest">Gửi thử thông báo</button><button class="pill danger" id="pOff">Tắt trên máy này</button></div>
+        </div>
+        <div class="pdev" id="pDev"></div>
+      </div>
   <div>Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
   <div id="sync"></div>
-  <div class="ver">Phiên bản 2.3.3</div>
+  <div class="stor" id="stor" aria-live="polite"></div>
+  <div class="ver">Phiên bản 2.3.4</div>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -235,16 +225,16 @@
     <label>Tên sự kiện<input id="fN" required maxlength="80"></label>
     <div class="dupbox" id="fDup" hidden></div>
 
-    <fieldset class="seg"><legend>Loại ngày</legend>
+    <fieldset class="seg c-blue"><legend>Loại ngày</legend>
       <label><input type="radio" name="cal" value="l" checked><span>Âm lịch</span></label>
       <label><input type="radio" name="cal" value="s"><span>Dương lịch</span></label>
     </fieldset>
-    <fieldset class="seg"><legend>Lặp lại</legend>
+    <fieldset class="seg c-green"><legend>Lặp lại</legend>
       <label><input type="radio" name="rep" value="y" checked><span>Hằng năm</span></label>
       <label><input type="radio" name="rep" value="t"><span>2 năm / lần</span></label>
       <label><input type="radio" name="rep" value="o"><span>Một lần</span></label>
     </fieldset>
-    <fieldset class="seg"><legend>Ngày diễn ra</legend>
+    <fieldset class="seg c-orange"><legend>Ngày diễn ra</legend>
       <label><input type="radio" name="dm" value="1" checked><span>Vào ngày</span></label>
       <label><input type="radio" name="dm" value="r"><span>Từ ngày đến ngày</span></label>
     </fieldset>
@@ -265,7 +255,7 @@
     <label>Giờ bắt đầu (tuỳ chọn)<input id="fT" type="time"></label>
     <div class="fsec"><div class="fsec-h">Địa điểm (tuỳ chọn)</div><div id="evSpots"></div><button type="button" class="pill green" id="evSpotAdd">+ Thêm địa điểm</button></div>
     <label>Ghi chú<textarea id="fC" rows="3" maxlength="500"></textarea></label>
-    <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button type="button" class="pill" id="fReset">Mới</button><button class="pill filled blue" id="fSave">Lưu sự kiện</button></div>
+    <div class="acts"><button type="button" class="pill danger" data-close>Đóng</button><button type="button" class="pill orange" id="fNew">Mới</button><button class="pill filled blue" id="fSave">Lưu sự kiện</button></div>
   </form>
 </div></dialog>
 
@@ -313,6 +303,6 @@
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
 </div></dialog>
 
-<script src="/js/app.js?v=2.3.3" defer></script>
+<script src="/js/app.js?v=2.3.4" defer></script>
 </body>
 </html>

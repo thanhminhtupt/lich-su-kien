@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
-<link rel="stylesheet" href="/css/styles.css?v=2.3.4">
+<link rel="stylesheet" href="/css/styles.css?v=2.3.5">
 </head>
 <body>
 <header class="hdr">
@@ -38,7 +38,7 @@
         <div class="who" id="who" hidden>
           <button class="avatar" id="meBtn" aria-label="Tài khoản"><span id="meIni">A</span></button>
           <span class="uname" id="meName0"></span>
-          <span class="sess" id="sessT" title="Phiên làm việc còn lại">20:00</span>
+          <span class="sess" id="sessT" hidden></span>
           <button class="pill sm" id="logoutBtn">Đăng xuất</button>
         </div>
       </div>
@@ -144,7 +144,7 @@
   <div>Lịch Sự Kiện · <a href="https://phanthietpho.vercel.app" target="_blank" rel="noopener noreferrer">by Đức Anh Hoàng</a></div>
   <div id="sync"></div>
   <div class="stor" id="stor" aria-live="polite"></div>
-  <div class="ver">Phiên bản 2.3.4</div>
+  <div class="ver">Phiên bản 2.3.5</div>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -154,12 +154,14 @@
   <div class="seg tabs" id="accTabs"><button type="button" data-v="login" class="on">Đăng nhập</button><button type="button" data-v="signup">Tạo tài khoản</button></div>
   <form id="fLogin" data-view="login">
     <h2>Đăng nhập</h2>
-    <label>Email hoặc tên đăng nhập<input id="liId" autocomplete="username" required maxlength="120" placeholder="ban@gmail.com"></label>
+    <label>Email hoặc tên đăng nhập<input id="liId" list="liIds" autocomplete="username" required maxlength="120" placeholder="ban@gmail.com"></label>
+    <datalist id="liIds"></datalist>
+    <div class="ids" id="liIdsBox" hidden></div>
     <label>Mật khẩu<input id="liPw" type="password" autocomplete="current-password" required maxlength="100"></label>
     <div class="err"></div>
     <button class="pill filled blue big">Đăng nhập</button>
     <button type="button" class="link" data-go="forgot">Quên mật khẩu?</button>
-    <p class="note sm">Phiên làm việc tự kết thúc sau 20 phút không thao tác.</p>
+    <p class="note sm">Đăng nhập được ghi nhớ 1 năm trên máy này. Bấm Đăng xuất khi dùng máy của người khác.</p>
   </form>
   <form id="fSignup" data-view="signup" hidden>
     <h2>Tạo tài khoản</h2>
@@ -254,6 +256,10 @@
 
     <label>Giờ bắt đầu (tuỳ chọn)<input id="fT" type="time"></label>
     <div class="fsec"><div class="fsec-h">Địa điểm (tuỳ chọn)</div><div id="evSpots"></div><button type="button" class="pill green" id="evSpotAdd">+ Thêm địa điểm</button></div>
+    <div class="fsec contact"><div class="fsec-h">Người liên hệ (tuỳ chọn)</div>
+      <div class="row2"><label>Tên người liên hệ<input id="fCn" maxlength="60" autocomplete="off" placeholder="Ví dụ: Anh Nam"></label>
+      <label>Số điện thoại<input id="fPh" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="0901 234 567"></label></div>
+    </div>
     <label>Ghi chú<textarea id="fC" rows="3" maxlength="500"></textarea></label>
     <div class="acts"><button type="button" class="pill danger" data-close>Đóng</button><button type="button" class="pill orange" id="fNew">Mới</button><button class="pill filled blue" id="fSave">Lưu sự kiện</button></div>
   </form>
@@ -280,6 +286,10 @@
   </div>
   <div id="spots"></div>
   <button type="button" class="pill green" id="spotAdd">+ Thêm vị trí</button>
+  <div class="fsec contact"><div class="fsec-h">Người liên hệ (tuỳ chọn)</div>
+    <div class="row2"><label>Tên người liên hệ<input id="plCn" maxlength="60" autocomplete="off" placeholder="Ví dụ: Chị Lan"></label>
+    <label>Số điện thoại<input id="plPh" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="0901 234 567"></label></div>
+  </div>
   <label>Ghi chú địa điểm (tuỳ chọn)<textarea id="plC" rows="4" maxlength="1000" placeholder="Ví dụ: sáng đi làng chài"></textarea></label>
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button><button class="pill filled blue" id="plSave">Lưu địa điểm</button></div>
 </form></dialog>
@@ -303,6 +313,6 @@
   <div class="acts"><button type="button" class="pill" data-close>Đóng</button></div>
 </div></dialog>
 
-<script src="/js/app.js?v=2.3.4" defer></script>
+<script src="/js/app.js?v=2.3.5" defer></script>
 </body>
 </html>

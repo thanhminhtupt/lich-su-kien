@@ -40,7 +40,7 @@ const canChi=y=>CAN[(y+6)%10]+" "+CHI[(y+8)%12];
 const now=new Date(),T0=day0(now);
 let events=[],places=[],suggestions=[],notifs=[],evA=[],plA=[];
 let me=null,token="",sessExp=0,serverOk=false,srvSize=0,warn="",stats=null,lastData="";
-const SESSION_MS=20*60e3;
+const SESSION_MS=365*864e5; /* ghi nhớ đăng nhập 1 năm */
 const norm=e=>e.cal?{...e,m2:e.m2||e.m}:{id:e.id,name:e.name,cal:"l",m:e.lm,a:e.a,m2:e.lm,b:e.b,repeat:true,year:null,time:e.time||"",note:e.note||""};
 try{events=(JSON.parse(ls.get(KEY)||"[]")||[]).map(norm)}catch{}
 try{places=JSON.parse(ls.get(PKEY)||"[]")||[]}catch{}
@@ -48,7 +48,7 @@ function derive(){evA=events.filter(e=>e.status!=="pending");plA=places.filter(p
 function cache(){ls.set(KEY,JSON.stringify(evA));ls.set(PKEY,JSON.stringify(plA))}
 const isAdmin=()=>!!me&&me.role==="admin";
 
-/* ===== Phiên làm việc 20 phút (tự đăng xuất khi không thao tác 20 phút) ===== */
+/* ===== Phiên đăng nhập: ghi nhớ 1 năm trên máy, tự gia hạn khi dùng ===== */
 try{const s=JSON.parse(ls.get(SKEY)||"null");if(s&&s.exp>Date.now()){token=s.t;me=s.me;sessExp=s.exp}}catch{}
 function saveSess(){token?ls.set(SKEY,JSON.stringify({t:token,me,exp:sessExp})):ls.del(SKEY)}
 function touch(){if(token){sessExp=Date.now()+SESSION_MS;saveSess()}}
@@ -56,14 +56,14 @@ function startSession(j){token=j.token;me=j.me;touch();lastData="";renderAcc();s
 function endSession(expired){if(!token&&!me)return;token="";me=null;notifs=[];saveSess();
   events=events.filter(e=>e.status!=="pending");places=places.filter(p=>p.status!=="pending");suggestions=[];derive();lastData="";
   renderAcc();renderAll();relinkPush();if(location.hash==="#duyet")location.hash="";
-  if(expired){toast("Phiên làm việc 20 phút đã kết thúc. Hãy đăng nhập lại.");openAcc("login")}}
+  if(expired){toast("Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.");openAcc("login")}}
 let lastPing=0;
 function ping(){if(!token||Date.now()-lastPing<60e3)return;lastPing=Date.now();
   api("auth",{op:"me"}).then(j=>{me=j.me;saveSess();renderAcc()}).catch(()=>{})}
 ["pointerdown","keydown"].forEach(ev=>addEventListener(ev,ping,{passive:true}));
 function tick(){const el=$("#sessT");if(!token)return;const r=sessExp-Date.now();
   if(r<=0){endSession(true);return}
-  const m=Math.floor(r/60e3),s=Math.floor(r%60e3/1e3);el.textContent=pad(m)+":"+pad(s);el.classList.toggle("low",r<120e3);if(acc.open)$("#meSess").textContent=`Phiên làm việc còn ${pad(m)}:${pad(s)} · tự đăng xuất sau 20 phút không thao tác.`}
+  const m=Math.floor(r/60e3),s=Math.floor(r%60e3/1e3);}
 
 /* ===== Gọi máy chủ ===== */
 async function api(path,body,auth=true){let r;const h={"Content-Type":"application/json"};if(auth&&token)h.Authorization="Bearer "+token;
@@ -215,16 +215,24 @@ $$("[data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
 function accView(v){$$("#acc [data-view]").forEach(x=>x.hidden=x.dataset.view!==v);
   $("#accTabs").hidden=!(v==="login"||v==="signup");$$("#accTabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $$("#acc .err,#acc .okm").forEach(x=>x.textContent="");
-  if(v==="me")renderMe();setTimeout(()=>{const i=acc.querySelector(`[data-view="${v}"] input`);if(i&&v!=="me")i.focus()},50)}
-function openAcc(v,msg){accView(v);acc.showModal();if(msg){const e=acc.querySelector(`[data-view="${v}"] .err`);if(e)e.textContent=msg}}
+  if(v==="me")renderMe();if(v==="login")renderIds();setTimeout(()=>{const i=acc.querySelector(`[data-view="${v}"] input`);if(i&&v!=="me")i.focus()},50)}
+function openAcc(v,msg){accView(v);if(v==="login")renderIds();acc.showModal();if(msg){const e=acc.querySelector(`[data-view="${v}"] .err`);if(e)e.textContent=msg}}
 acc.addEventListener("close",()=>{afterLogin=null});
 $$("#accTabs button").forEach(b=>b.onclick=()=>accView(b.dataset.v));
 $$("#acc [data-go]").forEach(b=>b.onclick=()=>accView(b.dataset.go));
 function requireLogin(cb,why){if(me)return cb();openAcc("login",why||"Hãy đăng nhập (hoặc tạo tài khoản) để tiếp tục.");afterLogin=cb}
 function formErr(f,e){f.querySelector(".err").textContent=e.message||String(e)}
 async function busy(f,fn){const b=f.querySelector("button:not([type=button])");if(b)b.disabled=true;try{await fn()}catch(e){formErr(f,e)}finally{if(b)b.disabled=false}}
-function loggedIn(j){const cb=afterLogin;afterLogin=null;startSession(j);acc.close();toast("Xin chào "+(j.me.role==="admin"?"Admin":j.me.name)+"!");if(cb)setTimeout(cb,50)}
-$("#fLogin").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{const j=await api("auth",{op:"login",id:$("#liId").value.trim(),password:$("#liPw").value},false);$("#liPw").value="";loggedIn(j)})};
+/* Gợi ý email / tên đăng nhập đã dùng trên máy này */
+const IDK="lich-ids";
+function savedIds(){try{const a=JSON.parse(ls.get(IDK)||"[]");return Array.isArray(a)?a.filter(x=>typeof x==="string"&&x).slice(0,5):[]}catch{return[]}}
+function rememberId(v){v=String(v||"").trim();if(!v)return;const a=savedIds().filter(x=>x.toLowerCase()!==v.toLowerCase());a.unshift(v);ls.set(IDK,JSON.stringify(a.slice(0,5)))}
+function renderIds(){const a=savedIds(),box=$("#liIdsBox");$("#liIds").innerHTML=a.map(x=>`<option value="${esc(x)}"></option>`).join("");
+  box.hidden=!a.length;box.innerHTML=a.length?'<span class="k">Đã đăng nhập trên máy này:</span>'+a.map(x=>`<button type="button" class="chipb" data-id="${esc(x)}">${esc(x)}</button>`).join(""):"";
+  if(!$("#liId").value&&a[0])$("#liId").value=a[0]}
+$("#liIdsBox").addEventListener("click",ev=>{const b=ev.target.closest("[data-id]");if(!b)return;$("#liId").value=b.dataset.id;$("#liPw").focus()});
+function loggedIn(j,id){rememberId(id||(j.me&&j.me.email));const cb=afterLogin;afterLogin=null;startSession(j);acc.close();toast("Xin chào "+(j.me.role==="admin"?"Admin":j.me.name)+"!");if(cb)setTimeout(cb,50)}
+$("#fLogin").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{const id=$("#liId").value.trim(),j=await api("auth",{op:"login",id,password:$("#liPw").value},false);$("#liPw").value="";loggedIn(j,id)})};
 $("#fSignup").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{
   if($("#suPw").value!==$("#suPw2").value)throw new Error("Hai mật khẩu chưa giống nhau.");
   const j=await api("auth",{op:"signup",name:$("#suName").value.trim(),email:$("#suEmail").value.trim(),password:$("#suPw").value},false);f.reset();loggedIn(j)})};
@@ -238,7 +246,7 @@ $("#fReset").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=
 function renderMe(){if(!me)return;const ini=initials(me.name);$("#meIni2").textContent=ini;$("#meName").textContent=dispName();$("#meMail").textContent=me.uid==="admin"?(me.email||"Tài khoản: admin"):me.email;
   $("#meRole").textContent=isAdmin()?"Quản trị viên":"Thành viên";$("#meRole").className="role"+(isAdmin()?" adm":"");
   $("#pfName").value=me.name;$("#pfMailW").hidden=me.uid!=="admin";$("#pfMail").value=me.email||"";
-  $("#meSess").textContent="Phiên làm việc tự kết thúc sau 20 phút không thao tác."}
+  $("#meSess").textContent="Đăng nhập được ghi nhớ 1 năm trên máy này."}
 $("#fName").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{const j=await api("auth",{op:"profile",name:$("#pfName").value.trim(),email:me.uid==="admin"?$("#pfMail").value.trim():undefined});me=j.me;saveSess();renderAcc();renderMe();toast("Đã lưu.")})};
 $("#fPw").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{f.querySelector(".okm").textContent="";
   if($("#cpNew").value!==$("#cpNew2").value)throw new Error("Hai mật khẩu mới chưa giống nhau.");
@@ -285,7 +293,7 @@ function readForm(){const cal=radio("cal"),rp=radio("rep"),dm=radio("dm");let m,
     m=d1.getMonth()+1;a=d1.getDate();m2=d2.getMonth()+1;b=d2.getDate();year=d1.getFullYear()}
   else{m=+$("#fM").value;a=+$("#fA").value;m2=dm==="r"?+$("#fM2").value:m;b=dm==="r"?+$("#fB").value:a;year=+$("#fY").value||toLunar(now.getDate(),now.getMonth()+1,now.getFullYear()).y;
     if(m2===m&&b<a)return{err:"Ngày kết thúc phải sau ngày bắt đầu."}}
-  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m,a,m2,b,repeat:rp!=="o",every:rp==="t"?2:1,year:rp==="y"?null:year,time:$("#fT").value,note:$("#fC").value.trim()}}
+  return{id:editing||"e"+Date.now(),name:$("#fN").value.trim(),cal,m,a,m2,b,repeat:rp!=="o",every:rp==="t"?2:1,year:rp==="y"?null:year,time:$("#fT").value,note:$("#fC").value.trim(),cn:$("#fCn").value.trim(),ph:$("#fPh").value.trim()}}
 let lastCal="l";
 function syncForm(){const rp=radio("rep"),cal=radio("cal"),dm=radio("dm");
   /* Đổi loại ngày: tự quy đổi ngày đang chọn sang âm/dương */
@@ -314,7 +322,7 @@ function editEvent(id){const e=events.find(x=>x.id===id);if(!e)return;resetForm(
   $("#fN").value=e.name;setRadio("rep",!e.repeat?"o":e.every===2?"t":"y");setRadio("dm",e.m2===e.m&&e.a===e.b?"1":"r");setRadio("cal",e.cal);lastCal=e.cal;
   if(e.cal==="s"){const y=e.year||(nextOcc(e)||{}).y||now.getFullYear(),o=occ(e,y);$("#fD1").value=isoD(o.s);$("#fD2").value=isoD(o.en)}
   else{$("#fM").value=e.m;$("#fA").value=e.a;$("#fM2").value=e.m2;$("#fB").value=e.b;$("#fY").value=e.year||toLunar(now.getDate(),now.getMonth()+1,now.getFullYear()).y}
-  $("#fT").value=e.time||"";$("#fC").value=e.note||"";(e.spots||[]).forEach(addEvSpot);
+  $("#fT").value=e.time||"";$("#fC").value=e.note||"";$("#fCn").value=e.cn||"";$("#fPh").value=e.ph||"";(e.spots||[]).forEach(addEvSpot);
   $("#fSave").textContent="Cập nhật";$("#fTitle").textContent="Sửa sự kiện";$("#fPend").hidden=true;syncForm()}
 $("#evF").onsubmit=async ev=>{ev.preventDefault();const o=readForm();if(o.err||!o.name)return;
   try{o.spots=readEvSpots();const j=await mutate("events","upsert",o);ed.close();resetForm();
@@ -418,7 +426,7 @@ function showEvent(id){const e=events.find(x=>x.id===id);if(!e)return;vdId=id;
   const pend=e.status==="pending";
   $("#vdS").innerHTML=pend?`<div class="pendbox"><span class="chip pend">Đang chờ duyệt</span>${e.byName?" Gửi bởi <b>"+esc(e.byName)+"</b>":""}${isAdmin()?`<div class="btns"><button class="pill sm filled green" data-ok="events:${esc(e.id)}">Duyệt</button><button class="pill sm danger" data-no="events:${esc(e.id)}">Từ chối</button></div>`:""}</div>`:"";
   bindActs($("#vdS"));$$("#vdS [data-ok],#vdS [data-no]").forEach(b=>b.addEventListener("click",()=>vd.close()));
-  $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+((e.spots||[]).length?row("Địa điểm",spotsHtml(e)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
+  $("#vdB").innerHTML=row("Ngày",esc(dateTxt(e)))+row("Lặp lại",esc(repTxt(e)))+row(e.repeat?"Lần tới":"Diễn ra","Dương lịch: "+esc(when))+lu+(e.time?row("Giờ",esc(e.time)):"")+((e.spots||[]).length?row("Địa điểm",spotsHtml(e)):"")+(e.cn||e.ph?row("Liên hệ",contactHtml(e)):"")+row("Ghi chú",e.note?`<div class="vnote">${esc(e.note)}</div>`:"<i>Không có ghi chú</i>");
   const can=isAdmin()||e.mine;$("#vdEdit").hidden=!can;$("#vdDel").hidden=!can;$("#vdDel").textContent=isAdmin()?"Xoá":e.delReq?"Đã gửi yêu cầu xoá":"Yêu cầu xoá";$("#vdDel").disabled=!isAdmin()&&!!e.delReq;$("#vdRem").hidden=$("#vdHint").hidden=pend;
   $("#vdGcal").hidden=!/android/i.test(navigator.userAgent);vd.showModal()}
 const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
@@ -492,9 +500,16 @@ function savePC(){ls.set("lich-pclosed",JSON.stringify([...pClosed]))}
 
 const pl=$("#pl");let editingP=null,mergeS=null;const openP=new Set();
 const flat=s=>esc(s).replace(/\s*\n+\s*/g," · ");
+/* Liên hệ: tên + số điện thoại, kèm nút Gọi và Zalo (không có số thì ẩn) */
+const telOf=s=>String(s||"").replace(/[^\d+]/g,"");
+const zaloOf=s=>{let d=telOf(s).replace(/^\+?84/,"0");return d};
+function fmtPh(s){const d=zaloOf(s);return /^0\d{9}$/.test(d)?d.replace(/(\d{4})(\d{3})(\d{3})/,"$1 $2 $3"):d}
+function contactHtml(o){const ph=telOf(o.ph);
+  return`<span class="ct">${o.cn?`<b>${esc(o.cn)}</b>`:""}${ph?`<span class="ctn">${esc(fmtPh(ph))}</span><span class="ctb"><a class="pill sm filled green" href="tel:${esc(ph)}"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1Z"/></svg>Gọi</a><a class="pill sm zalo" href="https://zalo.me/${esc(zaloOf(ph))}" target="_blank" rel="noopener noreferrer"><b class="zl">Z</b>Zalo</a></span>`:""}</span>`}
 function placeBody(p){let x="";const sp=p.spots||[];
   if(sp.length)x+='<ul class="spl">'+sp.map(s=>`<li>${s.n?`<span class="sn2">${esc(s.n)}</span>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.c?`<div class="sc2">${esc(s.c)}</div>`:""}</li>`).join("")+"</ul>";
   if(p.note)x+=`<div class="pnote"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
+  if(p.cn||p.ph)x+=`<div class="pcontact"><span class="k">Liên hệ:</span> ${contactHtml(p)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
 function placeRow(p,adm){const pv=[...(p.spots||[]).map(s=>s.n),p.note].filter(Boolean).map(flat).join(" · "),sg=suggestions.filter(s=>s.placeId===p.id),canSg=!adm&&!p.mine;
   return`<details class="pd" data-id="${esc(p.id)}"${openP.has(p.id)?" open":""}><summary><span class="ps"><span class="pn">${esc(p.name)}${sg.length?` <span class="chip sgc">${sg.length} góp ý</span>`:""}${p.delReq?' <span class="chip pend">yêu cầu xoá</span>':""}</span>${pv?`<span class="pv">${pv}</span>`:""}</span></summary><div class="pb">${placeBody(p)}`+
@@ -549,7 +564,7 @@ $("#spotAdd").onclick=()=>addSpot().querySelector(".sn").focus();
 function plDupCheck(){const dup=dupHint($("#plN").value,editingP,places,$("#plDup"),"địa điểm");$("#plSave").disabled=!!dup}
 /* Mở form địa điểm. s = góp ý cần đưa vào (quản trị viên) */
 function openPlace(p,s){editingP=p?p.id:null;mergeS=s||null;$("#plTitle").textContent=s?"Cập nhật góp ý vào địa điểm":p?"Sửa địa điểm":isAdmin()?"Thêm địa điểm":"Gửi địa điểm mới";
-  $("#plPend").hidden=!!p||isAdmin();$("#plN").value=p?p.name:"";$("#plC").value=p?p.note||"":"";
+  $("#plPend").hidden=!!p||isAdmin();$("#plN").value=p?p.name:"";$("#plC").value=p?p.note||"":"";$("#plCn").value=p&&p.cn||"";$("#plPh").value=p&&p.ph||"";
   $("#spots").innerHTML="";(p&&p.spots||[]).forEach(addSpot);
   $("#plProv").value=p&&p.prov||(!p&&provF)||0;renderSubs(p&&p.sub||"");
   $("#plMerge").hidden=!s;
@@ -567,7 +582,7 @@ $("#plF").onsubmit=async ev=>{ev.preventDefault();
   try{const prov=+$("#plProv").value,sb=document.querySelector("input[name=plSub]:checked");
     if(!prov){alert("Hãy chọn tỉnh / thành phố (1 – 34) để địa điểm được sắp xếp đúng.");$("#plProv").focus();return}
     if(PROV[prov-1][1]&&!sb){alert("Hãy tick chọn khu vực (tỉnh cũ) của địa điểm.");return}
-    const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim(),prov,sub:sb?sb.value:"",spots:readSpots()};if(!o.name)return;
+    const o={id:editingP||"p"+Date.now(),name:$("#plN").value.trim(),note:$("#plC").value.trim(),cn:$("#plCn").value.trim(),ph:$("#plPh").value.trim(),prov,sub:sb?sb.value:"",spots:readSpots()};if(!o.name)return;
     const j=await mutate("places","upsert",o,mergeS?{merge:mergeS.id}:undefined);pl.close();$("#pSearch").value="";renderPlaces();
     toast(mergeS?"Đã cập nhật địa điểm. Người góp ý đã được thông báo.":j.pending?"Đã gửi địa điểm. Quản trị viên sẽ duyệt trước khi hiển thị.":"Đã lưu địa điểm.");mergeS=null}
   catch(e){if(e.code==="dup")plDupCheck();alert(e.message)}};

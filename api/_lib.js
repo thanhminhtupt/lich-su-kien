@@ -5,7 +5,7 @@ const URL_=process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN=process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN;
 /* Chế độ thử trên máy (npm run dev): dữ liệu giữ trong bộ nhớ, tắt máy là mất */
 const MEM=!(URL_&&TOKEN)&&process.env.LICH_DEV_MEMORY==="1";
-const SESSION_SEC=20*60; /* Phiên làm việc 20 phút */
+const SESSION_SEC=365*24*3600; /* Phiên đăng nhập được ghi nhớ 1 năm (tự gia hạn khi dùng app) */
 const configured=()=>!!(MEM||(URL_&&TOKEN&&process.env.ADMIN_PASSWORD));
 
 /* ===== Redis (Upstash REST) ===== */
@@ -72,14 +72,14 @@ async function allUsers(){const o=await hgetall(UKEY),L=[];for(const k in o)try{
 async function adminIds(){return(await allUsers()).filter(u=>u.role==="admin").map(u=>u.uid)}
 const pub=u=>u&&{uid:u.uid,name:u.name,email:u.email,role:u.role};
 
-/* ===== Phiên làm việc (token ngẫu nhiên, hết hạn sau 20 phút không hoạt động) ===== */
+/* ===== Phiên đăng nhập (token ngẫu nhiên, ghi nhớ 1 năm, gia hạn mỗi lần dùng) ===== */
 const skey=t=>"lich:s:"+shaHex(t);
 async function newSession(uid){const t=crypto.randomBytes(32).toString("base64url");await redis(["SET",skey(t),uid,"EX",SESSION_SEC]);return t}
 const tokenOf=req=>{const h=String(req.headers.authorization||"");return h.startsWith("Bearer ")?h.slice(7).trim():""};
 async function session(req,refresh=true){const t=tokenOf(req);if(!t||t.length>100)return null;
   const uid=await redis(["GET",skey(t)]);if(!uid)return null;const u=await getUser(uid);if(!u)return null;
   if(refresh)await redis(["EXPIRE",skey(t),SESSION_SEC]);return u}
-async function needUser(req){const u=await session(req);if(!u)fail(401,tokenOf(req)?"Phiên làm việc đã hết hạn (20 phút). Hãy đăng nhập lại.":"Bạn cần đăng nhập để làm việc này.","session");return u}
+async function needUser(req){const u=await session(req);if(!u)fail(401,tokenOf(req)?"Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.":"Bạn cần đăng nhập để làm việc này.","session");return u}
 async function needAdmin(req){const u=await needUser(req);if(u.role!=="admin")fail(403,"Chỉ quản trị viên mới làm được việc này.");return u}
 
 /* ===== Dữ liệu dùng chung ===== */

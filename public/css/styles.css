@@ -553,3 +553,19 @@ fieldset.seg.c-blue legend{color:#007aff}fieldset.seg.c-green legend{color:#078f
 #ed .prev:empty{display:none}
 #ed .prev.bad{background:color-mix(in srgb,#ff0000 9%,transparent)}
 @media(prefers-color-scheme:dark){fieldset.seg.c-blue legend{color:#5aa9ff}fieldset.seg.c-green legend{color:#4cd964}fieldset.seg.c-orange legend{color:#ffb340}}
+
+/* ===== Bản 2.3.5 ===== */
+.contact .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:420px){.contact .row2{grid-template-columns:1fr}}
+.ct{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ctn{font-variant-numeric:tabular-nums;font-weight:600}
+.ctb{display:inline-flex;gap:8px}
+.ctb .pill{text-decoration:none;gap:5px}
+.pill.zalo{background:#0068ff;color:#fff}
+.pill.zalo .zl{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:5px;background:#fff;color:#0068ff;font-size:.72rem;font-weight:800}
+.pcontact{margin-top:8px}
+.pcontact .k{color:var(--mute)}
+.ids{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 6px}
+.ids .k{font-size:.82rem;color:var(--mute);width:100%}
+.chipb{min-height:30px;padding:4px 12px;border:0;border-radius:999px;background:color-mix(in srgb,#007aff 13%,transparent);color:#0062d6;font:inherit;font-size:.88rem;font-weight:600;box-shadow:none;cursor:pointer}
+@media(prefers-color-scheme:dark){.chipb{color:#7ab8ff}}

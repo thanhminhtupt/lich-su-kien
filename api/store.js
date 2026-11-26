@@ -6,7 +6,8 @@ const{str,int,nameKey,fail}=L;
 
 function cleanSpots(a,withNote){return(Array.isArray(a)?a:[]).slice(0,20).map(x=>{if(!x||typeof x!=="object")return null;
   const n=str(x.n,80),c=withNote?str(x.c,300):"";let u=str(x.u,500);if(u&&!/^https?:\/\/[^\s]+$/i.test(u))u="";
-  return n||u||c?(withNote?{n,u,c}:{n,u}):null}).filter(Boolean)}
+  const k=cleanContact(x),o=withNote?{n,u,c}:{n,u};if(k.cn)o.cn=k.cn;if(k.ph)o.ph=k.ph;
+  return n||u||c||k.ph?o:null}).filter(Boolean)}
 /* Liên hệ: tên người liên hệ + số điện thoại (chỉ giữ số, dấu + ở đầu) */
 function cleanContact(o){const cn=str(o.cn,60);let ph=String(o.ph||"").replace(/[^\d+]/g,"").replace(/(?!^)\+/g,"").slice(0,15);if(ph.replace(/\D/g,"").length<8)ph="";return{cn,ph}}
 function cleanEvent(e){if(!e||typeof e!=="object")return null;

@@ -5,7 +5,7 @@ const URL_=process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN=process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN;
 /* Chế độ thử trên máy (npm run dev): dữ liệu giữ trong bộ nhớ, tắt máy là mất */
 const MEM=!(URL_&&TOKEN)&&process.env.LICH_DEV_MEMORY==="1";
-const SESSION_SEC=365*24*3600; /* Phiên đăng nhập được ghi nhớ 1 năm (tự gia hạn khi dùng app) */
+const SESSION_SEC=183*24*3600; /* Phiên đăng nhập được ghi nhớ 6 tháng (tự gia hạn khi dùng app) */
 const configured=()=>!!(MEM||(URL_&&TOKEN&&process.env.ADMIN_PASSWORD));
 
 /* ===== Redis (Upstash REST) ===== */
@@ -72,7 +72,7 @@ async function allUsers(){const o=await hgetall(UKEY),L=[];for(const k in o)try{
 async function adminIds(){return(await allUsers()).filter(u=>u.role==="admin").map(u=>u.uid)}
 const pub=u=>u&&{uid:u.uid,name:u.name,email:u.email,role:u.role};
 
-/* ===== Phiên đăng nhập (token ngẫu nhiên, ghi nhớ 1 năm, gia hạn mỗi lần dùng) ===== */
+/* ===== Phiên đăng nhập (token ngẫu nhiên, ghi nhớ 6 tháng, gia hạn mỗi lần dùng) ===== */
 const skey=t=>"lich:s:"+shaHex(t);
 async function newSession(uid){const t=crypto.randomBytes(32).toString("base64url");await redis(["SET",skey(t),uid,"EX",SESSION_SEC]);return t}
 const tokenOf=req=>{const h=String(req.headers.authorization||"");return h.startsWith("Bearer ")?h.slice(7).trim():""};

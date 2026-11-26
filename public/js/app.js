@@ -40,7 +40,7 @@ const canChi=y=>CAN[(y+6)%10]+" "+CHI[(y+8)%12];
 const now=new Date(),T0=day0(now);
 let events=[],places=[],suggestions=[],notifs=[],evA=[],plA=[];
 let me=null,token="",sessExp=0,serverOk=false,srvSize=0,warn="",stats=null,lastData="";
-const SESSION_MS=365*864e5; /* ghi nhớ đăng nhập 1 năm */
+const SESSION_MS=183*864e5; /* ghi nhớ đăng nhập 6 tháng */
 const norm=e=>e.cal?{...e,m2:e.m2||e.m}:{id:e.id,name:e.name,cal:"l",m:e.lm,a:e.a,m2:e.lm,b:e.b,repeat:true,year:null,time:e.time||"",note:e.note||""};
 try{events=(JSON.parse(ls.get(KEY)||"[]")||[]).map(norm)}catch{}
 try{places=JSON.parse(ls.get(PKEY)||"[]")||[]}catch{}
@@ -48,7 +48,7 @@ function derive(){evA=events.filter(e=>e.status!=="pending");plA=places.filter(p
 function cache(){ls.set(KEY,JSON.stringify(evA));ls.set(PKEY,JSON.stringify(plA))}
 const isAdmin=()=>!!me&&me.role==="admin";
 
-/* ===== Phiên đăng nhập: ghi nhớ 1 năm trên máy, tự gia hạn khi dùng ===== */
+/* ===== Phiên đăng nhập: ghi nhớ 6 tháng trên máy, tự gia hạn khi dùng ===== */
 try{const s=JSON.parse(ls.get(SKEY)||"null");if(s&&s.exp>Date.now()){token=s.t;me=s.me;sessExp=s.exp}}catch{}
 function saveSess(){token?ls.set(SKEY,JSON.stringify({t:token,me,exp:sessExp})):ls.del(SKEY)}
 function touch(){if(token){sessExp=Date.now()+SESSION_MS;saveSess()}}
@@ -108,7 +108,7 @@ async function countVisit(){if(visitSent)return;visitSent=true;const k=ymd(new D
 const crossY=e=>e.m2<e.m||(e.m2===e.m&&e.b<e.a);
 const dateTxt=e=>(e.cal==="s"?"Dương ":"Âm ")+(e.m2===e.m?(e.a===e.b?e.a:e.a+"–"+e.b)+"/"+e.m:e.a+"/"+e.m+" – "+e.b+"/"+e.m2);
 const repTxt=e=>e.repeat?(e.every===2?"2 năm/lần · từ "+e.year:"Hằng năm"):"Một lần · năm "+e.year;
-const spotsHtml=e=>(e.spots||[]).map(s=>`<span class="evs">${esc(s.n||"")}${s.n&&s.u?" - ":""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}</span>`).join("");
+const spotsHtml=e=>(e.spots||[]).map(s=>`<span class="evs">${esc(s.n||"")}${s.n&&s.u?" - ":""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.ph||s.cn?`<span class="sct2">${contactHtml(s)}</span>`:""}</span>`).join("");
 const RI={y:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 7V6a2.5 2.5 0 0 1 2.5-2.5H12M10 1.5l2 2-2 2M13 9v1a2.5 2.5 0 0 1-2.5 2.5H4M6 14.5l-2-2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   o:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 6l1.3-1v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   t:'<svg class="ri" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.2 6.2a1.8 1.8 0 0 1 3.5.5c0 1.3-3.6 2.4-3.6 4.3h3.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
@@ -246,7 +246,7 @@ $("#fReset").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=
 function renderMe(){if(!me)return;const ini=initials(me.name);$("#meIni2").textContent=ini;$("#meName").textContent=dispName();$("#meMail").textContent=me.uid==="admin"?(me.email||"Tài khoản: admin"):me.email;
   $("#meRole").textContent=isAdmin()?"Quản trị viên":"Thành viên";$("#meRole").className="role"+(isAdmin()?" adm":"");
   $("#pfName").value=me.name;$("#pfMailW").hidden=me.uid!=="admin";$("#pfMail").value=me.email||"";
-  $("#meSess").textContent="Đăng nhập được ghi nhớ 1 năm trên máy này."}
+  $("#meSess").textContent="Đăng nhập được ghi nhớ 6 tháng trên máy này."}
 $("#fName").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{const j=await api("auth",{op:"profile",name:$("#pfName").value.trim(),email:me.uid==="admin"?$("#pfMail").value.trim():undefined});me=j.me;saveSess();renderAcc();renderMe();toast("Đã lưu.")})};
 $("#fPw").onsubmit=ev=>{ev.preventDefault();const f=ev.target;busy(f,async()=>{f.querySelector(".okm").textContent="";
   if($("#cpNew").value!==$("#cpNew2").value)throw new Error("Hai mật khẩu mới chưa giống nhau.");
@@ -276,13 +276,13 @@ function addEvSpot(s){s=s||{};const d=document.createElement("div");d.className=
   d.innerHTML=`<div class="spot-h"><b></b><button type="button" class="pill sm danger" data-sx>Xoá</button></div>
 <label>Tên địa điểm<input class="en" maxlength="80" placeholder="Ví dụ: Trung tâm Văn Hóa A"></label>
 <label>Link Google (bản đồ)<input class="eu" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>`;
-  d.querySelector(".en").value=s.n||"";d.querySelector(".eu").value=s.u||"";
+  d.querySelector(".en").value=s.n||"";d.querySelector(".eu").value=s.u||"";spotCt(d,s);
   d.querySelector("[data-sx]").onclick=()=>{d.remove();numberEvSpots()};$("#evSpots").append(d);numberEvSpots();return d}
 function readEvSpots(){const out=[];
   for(const d of $$("#evSpots .spot")){const n=d.querySelector(".en").value.trim();let u=d.querySelector(".eu").value.trim();
-    if(!n&&!u)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    const k=readCt(d);if(!n&&!u&&!k.ph)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
     if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u))throw new Error("Link Google không hợp lệ: "+u);
-    out.push({n,u})}
+    out.push({n,u,...k})}
   return out}
 $("#evSpotAdd").onclick=()=>addEvSpot().querySelector(".en").focus();
 /* Đọc form → sự kiện. Trả về {err} nếu ngày chưa hợp lệ */
@@ -375,7 +375,7 @@ async function reqDelete(k,id){const x=(k==="events"?events:places).find(i=>i.id
 function pendingCount(){if(!me)return 0;const all=[...events,...places];return all.filter(x=>x.status==="pending"&&(isAdmin()||x.mine)).length+all.filter(x=>x.delReq&&x.status!=="pending").length+(isAdmin()?suggestions.length:0)}
 const plName=id=>{const p=places.find(x=>x.id===id);return p?p.name:"(đã xoá)"};
 const byLine=x=>`<small class="by2">${x.byName?"Gửi bởi <b>"+esc(x.byName)+"</b> · ":""}${x.at?ago(x.at):""}</small>`;
-function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.text):"<i>(không có nội dung)</i>"}</div>${(s.spots||[]).length?'<ul class="spl">'+s.spots.map(x=>`<li><span class="sn2">${esc(x.n||"")}</span>${x.u?` <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${x.c?`<div class="sc2">${esc(x.c)}</div>`:""}</li>`).join("")+"</ul>":""}${byLine(s)}
+function sugHtml(s,adm){return`<div class="sg"><div class="sgt">${s.text?esc(s.text):"<i>(không có nội dung)</i>"}</div>${(s.spots||[]).length?'<ul class="spl">'+s.spots.map(x=>`<li><span class="sn2">${esc(x.n||"")}</span>${x.u?` <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${x.c?`<div class="sc2">${esc(x.c)}</div>`:""}${x.ph||x.cn?`<div class="sct2">${contactHtml(x)}</div>`:""}</li>`).join("")+"</ul>":""}${byLine(s)}
   <div class="btns">${adm?`<button class="pill sm filled blue" data-merge="${esc(s.id)}">Đưa vào địa điểm</button><button class="pill sm" data-dismiss="${esc(s.id)}">Bỏ qua</button>`:`<span class="chip pend">Đang chờ quản trị viên xem</span>`}</div></div>`}
 function renderReview(){if($("#revPage").hidden)return;const adm=isAdmin(),box=$("#revList");
   if(!me){box.innerHTML=`<div class="empty">Hãy đăng nhập để xem mục này.</div>`;return}
@@ -506,8 +506,15 @@ const zaloOf=s=>{let d=telOf(s).replace(/^\+?84/,"0");return d};
 function fmtPh(s){const d=zaloOf(s);return /^0\d{9}$/.test(d)?d.replace(/(\d{4})(\d{3})(\d{3})/,"$1 $2 $3"):d}
 function contactHtml(o){const ph=telOf(o.ph);
   return`<span class="ct">${o.cn?`<b>${esc(o.cn)}</b>`:""}${ph?`<span class="ctn">${esc(fmtPh(ph))}</span><span class="ctb"><a class="pill sm filled green" href="tel:${esc(ph)}"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1Z"/></svg>Gọi</a><a class="pill sm zalo" href="https://zalo.me/${esc(zaloOf(ph))}" target="_blank" rel="noopener noreferrer"><b class="zl">Z</b>Zalo</a></span>`:""}</span>`}
+/* Liên hệ cho từng vị trí: nút "+ Thêm SĐT" mở 2 ô Tên + SĐT (không bắt buộc) */
+function spotCt(d,s){s=s||{};const w=document.createElement("div");w.className="sct";
+  w.innerHTML=`<button type="button" class="pill sm green" data-ct>+ Thêm SĐT</button><div class="row2 ctf" hidden><label>Tên liên hệ<input class="scn" maxlength="60" autocomplete="off" placeholder="Ví dụ: Anh Nam"></label><label>Số điện thoại<input class="sph" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="0901 234 567"></label></div>`;
+  const b=w.querySelector("[data-ct]"),f=w.querySelector(".ctf");w.querySelector(".scn").value=s.cn||"";w.querySelector(".sph").value=s.ph||"";
+  const show=()=>{f.hidden=false;b.hidden=true};if(s.cn||s.ph)show();b.onclick=()=>{show();w.querySelector(".scn").focus()};d.append(w)}
+function readCt(d){const o={},n=d.querySelector(".scn"),p=d.querySelector(".sph");if(!n)return o;const cn=n.value.trim(),ph=p.value.trim();
+  if(ph&&telOf(ph).replace(/\D/g,"").length<8)throw new Error("Số điện thoại chưa đúng: "+ph);if(cn)o.cn=cn;if(ph)o.ph=ph;return o}
 function placeBody(p){let x="";const sp=p.spots||[];
-  if(sp.length)x+='<ul class="spl">'+sp.map(s=>`<li>${s.n?`<span class="sn2">${esc(s.n)}</span>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.c?`<div class="sc2">${esc(s.c)}</div>`:""}</li>`).join("")+"</ul>";
+  if(sp.length)x+='<ul class="spl">'+sp.map(s=>`<li>${s.n?`<span class="sn2">${esc(s.n)}</span>`:""}${s.u?`<a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">Đường Đi</a>`:""}${s.c?`<div class="sc2">${esc(s.c)}</div>`:""}${s.ph||s.cn?`<div class="sct2">${contactHtml(s)}</div>`:""}</li>`).join("")+"</ul>";
   if(p.note)x+=`<div class="pnote"><span class="k">Ghi chú:</span> ${esc(p.note)}</div>`;
   if(p.cn||p.ph)x+=`<div class="pcontact"><span class="k">Liên hệ:</span> ${contactHtml(p)}</div>`;
   return x||`<div class="empty">Chưa có chi tiết.</div>`}
@@ -552,13 +559,13 @@ function addSpot(s){s=s||{};const d=document.createElement("div");d.className="s
 <label>Tên vị trí<input class="sn" maxlength="80" placeholder="Ví dụ: Quảng Trường"></label>
 <label>Link vị trí<input class="su" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
 <label>Ghi chú vị trí (tuỳ chọn)<input class="sc" maxlength="300" placeholder="Ví dụ: nơi này cần đi buổi tối"></label>`;
-  d.querySelector(".sn").value=s.n||"";d.querySelector(".su").value=s.u||"";d.querySelector(".sc").value=s.c||"";
+  d.querySelector(".sn").value=s.n||"";d.querySelector(".su").value=s.u||"";d.querySelector(".sc").value=s.c||"";spotCt(d,s);
   d.querySelector("[data-sx]").onclick=()=>{d.remove();numberSpots()};$("#spots").append(d);numberSpots();return d}
 function readSpots(){const out=[];
   for(const d of $$("#spots .spot")){let n=d.querySelector(".sn").value.trim(),u=d.querySelector(".su").value.trim(),c=d.querySelector(".sc").value.trim();
-    if(!n&&!u&&!c)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    const k=readCt(d);if(!n&&!u&&!c&&!k.ph)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
     if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u))throw new Error("Link vị trí không hợp lệ: "+u);
-    out.push({n,u,c})}
+    out.push({n,u,c,...k})}
   return out}
 $("#spotAdd").onclick=()=>addSpot().querySelector(".sn").focus();
 function plDupCheck(){const dup=dupHint($("#plN").value,editingP,places,$("#plDup"),"địa điểm");$("#plSave").disabled=!!dup}
@@ -595,14 +602,15 @@ function addSgSpot(){const d=document.createElement("div");d.className="spot";
 <label>Tên vị trí<input class="sn" maxlength="80" placeholder="Ví dụ: Bãi Sau"></label>
 <label>Link Google Maps<input class="su" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
 <label>Nội dung góp ý (ghi chú vị trí)<textarea class="sc" rows="2" maxlength="300" placeholder="Ví dụ: Nên đi buổi chiều, có bãi giữ xe miễn phí…"></textarea></label>`;
-  d.querySelector("[data-sx]").onclick=()=>{d.parentNode.removeChild(d);numSg()};$("#sgSpots").append(d);numSg();return d}
+  spotCt(d);d.querySelector("[data-sx]").onclick=()=>{d.parentNode.removeChild(d);numSg()};$("#sgSpots").append(d);numSg();return d}
 function numSg(){$$("#sgSpots .spot").forEach((d,i)=>d.querySelector(".spot-h b").textContent="Vị trí góp ý "+(i+1))}
 $("#sgSpotAdd").onclick=()=>addSgSpot().querySelector(".sn").focus();
 function openSuggest(id){requireLogin(()=>{const p=places.find(x=>x.id===id);if(!p)return;sgPlace=id;$("#sgP").textContent=p.name;$("#sgPrev").innerHTML=placeBody(p);$("#sgF").reset();$("#sgSpots").innerHTML="";addSgSpot();$("#sgE").textContent="";sg.showModal();$("#sgSpots .sn").focus()},"Hãy đăng nhập để gửi góp ý cho địa điểm.")}
 $("#sgF").onsubmit=async ev=>{ev.preventDefault();const text=$("#sgT").value.trim(),spots=[];
   for(const d of $$("#sgSpots .spot")){const n=d.querySelector(".sn").value.trim(),c=d.querySelector(".sc").value.trim();let u=d.querySelector(".su").value.trim();
-    if(!n&&!u&&!c)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
-    if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u)){$("#sgE").textContent="Link Google không hợp lệ: "+u;return}spots.push({n,u,c})}
+    let k;try{k=readCt(d)}catch(e){$("#sgE").textContent=e.message;return}
+    if(!n&&!u&&!c&&!k.ph)continue;if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+    if(u&&!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(u)){$("#sgE").textContent="Link Google không hợp lệ: "+u;return}spots.push({n,u,c,...k})}
   if(!text&&!spots.length){$("#sgE").textContent="Hãy nhập ít nhất 1 vị trí hoặc nội dung góp ý.";return}
   try{apply(await api("store",{op:"suggest",placeId:sgPlace,text,spots}));sg.close();toast("Đã gửi góp ý. Quản trị viên sẽ xem và cập nhật vào địa điểm.")}catch(e){$("#sgE").textContent=e.message}};
 
@@ -703,3 +711,6 @@ if(typeof document!=="undefined"&&!globalThis.__TEST__){
     navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtl&&!reloaded){reloaded=true;location.reload()}});
     navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(r=>{swReg=r;renderPush();r.update().catch(()=>{})}).catch(()=>{})}
 }
+
+/* Bộ nhớ trang bị xoá (Safari tự xoá sau 7 ngày không mở web) → khôi phục đăng nhập từ cookie 6 tháng */
+if(!token)api("auth",{op:"resume"},false).then(j=>{if(j&&j.token&&!token)startSession(j)}).catch(()=>{});

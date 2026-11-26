@@ -9,11 +9,16 @@ async function findLogin(id){id=str(id,120).toLowerCase();if(!id)return null;
   let u=await L.getUser(id);if(u)return u;
   /* Quản trị viên có thể đăng nhập bằng email ADMIN_EMAIL */
   const a=await L.getUser("admin");return a&&a.email&&a.email===id?a:null}
+/* Cookie dự phòng (HttpOnly, 6 tháng): nếu trình duyệt xoá bộ nhớ của trang (Safari xoá sau 7 ngày không mở),
+   app vẫn tự đăng nhập lại được bằng op "resume". Cookie chỉ dùng cho resume, không dùng để xác thực thao tác khác. */
+const CK="lich_s";
+const setCk=(res,t,age)=>res.setHeader("Set-Cookie",`${CK}=${t||""}; Path=/api; Max-Age=${age}; HttpOnly; Secure; SameSite=Lax`);
+const ckOf=req=>{const m=String(req.headers.cookie||"").match(/(?:^|;\s*)lich_s=([\w-]{20,100})/);return m?m[1]:""};
 const siteUrl=req=>(process.env.APP_URL||`https://${req.headers["x-forwarded-host"]||req.headers.host}`).replace(/\/+$/,"");
 
 module.exports=L.handle(async(req,res)=>{
   if(req.method!=="POST")fail(405,"Phương thức không được hỗ trợ.");
-  const b=L.body(req),ip=L.ipOf(req),ok=x=>res.status(200).json({ok:true,...x});
+  const b=L.body(req),ip=L.ipOf(req),ok=x=>{if(x&&x.token)setCk(res,x.token,L.SESSION_SEC);return res.status(200).json({ok:true,...x})};
   switch(b.op){
     case"signup":{const name=str(b.name,60),email=str(b.email,120).toLowerCase();
       if(!name)fail(400,"Hãy nhập tên hiển thị.");if(!EMAIL.test(email))fail(400,"Email không hợp lệ.");pwRule(b.password);
@@ -27,8 +32,10 @@ module.exports=L.handle(async(req,res)=>{
       const u=await findLogin(id);
       if(!u||!L.pwOk(u,b.password)){await hitId();await hitIp();await new Promise(r=>setTimeout(r,400));fail(401,"Email/tên đăng nhập hoặc mật khẩu không đúng.")}
       return ok({token:await L.newSession(u.uid),me:L.pub(u)})}
-    case"logout":{const t=L.tokenOf(req);if(t)await L.redis(["DEL",L.skey(t)]);return ok()}
-    case"me":{const u=await L.needUser(req);return ok({me:L.pub(u),ttl:L.SESSION_SEC,unread:await L.unread(u.uid)})}
+    case"logout":{const t=L.tokenOf(req)||ckOf(req);if(t)await L.redis(["DEL",L.skey(t)]);setCk(res,"",0);return ok()}
+    case"resume":{const t=ckOf(req);if(!t)return ok({});const uid=await L.redis(["GET",L.skey(t)]);const u=uid&&await L.getUser(uid);
+      if(!u){setCk(res,"",0);return ok({})}await L.redis(["EXPIRE",L.skey(t),L.SESSION_SEC]);return ok({token:t,me:L.pub(u)})}
+    case"me":{const u=await L.needUser(req);setCk(res,L.tokenOf(req),L.SESSION_SEC);return ok({me:L.pub(u),ttl:L.SESSION_SEC,unread:await L.unread(u.uid)})}
     case"changePassword":{const u=await L.needUser(req);
       const hit=await L.limit("cp:"+u.uid,8,600,"Nhập sai quá nhiều lần. Hãy thử lại sau 10 phút.");
       if(!L.pwOk(u,b.old)){await hit();fail(400,"Mật khẩu hiện tại không đúng.")}pwRule(b.password);

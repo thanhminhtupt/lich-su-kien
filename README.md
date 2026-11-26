@@ -14,7 +14,7 @@ Web app quản lý sự kiện theo **ngày âm hoặc dương**, ghi chú đị
 
 ## Có gì mới trong bản 2.0
 - **Tài khoản**: đăng ký (tên + email + mật khẩu), đăng nhập, đăng xuất, đổi tên, đổi mật khẩu, **quên mật khẩu** (gửi liên kết đặt lại vào đúng email đã đăng ký, hiệu lực 30 phút).
-- **Phiên làm việc 20 phút**: không thao tác 20 phút thì tự đăng xuất. Đồng hồ đếm ngược nằm cạnh nút Đăng xuất.
+- **Ghi nhớ đăng nhập 6 tháng**: tự gia hạn mỗi lần mở app; có cookie dự phòng nên Safari xoá bộ nhớ trang vẫn tự đăng nhập lại. Bấm Đăng xuất để thoát.
 - **Ngày diễn ra**: chọn **Vào ngày** hoặc **Từ ngày đến ngày** (được kéo sang tháng sau, sang năm sau, ví dụ 25/12 → 5/1). Dương lịch chọn bằng lịch; âm lịch chọn ngày + tháng âm. Đổi Âm ↔ Dương tự quy đổi ngày.
 - **Duyệt bài**: thành viên gửi lịch / địa điểm → chờ duyệt, chưa hiển thị. Quản trị viên và người gửi đều nhận thông báo; khi duyệt / từ chối người gửi được báo (kèm lý do).
 - **Trùng tên địa điểm**: gõ tên là app hiện ngay địa điểm trùng (chặn lưu) hoặc tương tự (cảnh báo), có nút **Xem** và **Góp ý vào đây**.
@@ -60,7 +60,7 @@ npm run dev      # http://localhost:3000 – dữ liệu trong bộ nhớ, admin
 ## Cấu trúc
 - `public/` – giao diện (index.html, js/app.js, css/styles.css, sw.js, assets/)
 - `api/store.js` – sự kiện, địa điểm, góp ý, duyệt bài, đếm truy cập
-- `api/auth.js` – tài khoản, phiên 20 phút, quên/đổi mật khẩu, thông báo trong app
+- `api/auth.js` – tài khoản, phiên đăng nhập 6 tháng, quên/đổi mật khẩu, thông báo trong app
 - `api/push.js` – bật/tắt/gửi thử thông báo đẩy, danh sách thiết bị
 - `api/cron.js` – nhắc buổi sáng (Vercel Cron)
 - `api/_*.js` – thư viện dùng chung (không phải API)

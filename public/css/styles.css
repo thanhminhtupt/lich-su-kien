@@ -569,3 +569,11 @@ fieldset.seg.c-blue legend{color:#007aff}fieldset.seg.c-green legend{color:#078f
 .ids .k{font-size:.82rem;color:var(--mute);width:100%}
 .chipb{min-height:30px;padding:4px 12px;border:0;border-radius:999px;background:color-mix(in srgb,#007aff 13%,transparent);color:#0062d6;font:inherit;font-size:.88rem;font-weight:600;box-shadow:none;cursor:pointer}
 @media(prefers-color-scheme:dark){.chipb{color:#7ab8ff}}
+
+/* ===== Bản 2.3.6 ===== */
+.sct{margin-top:6px}
+.sct .ctf{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sct .ctf[hidden]{display:none}
+@media(max-width:420px){.sct .ctf{grid-template-columns:1fr}}
+.sct2{display:block;margin-top:6px}
+.evs .sct2{margin:4px 0 2px}
